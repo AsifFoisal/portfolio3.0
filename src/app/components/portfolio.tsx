@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react';
 import Image from 'next/image';
-import { motion, animate, useInView, useMotionTemplate, useMotionValue, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react';
+import { motion, AnimatePresence, animate, useInView, useMotionTemplate, useMotionValueEvent, useMotionValue, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react';
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import Dialog from './Dialog';
@@ -215,6 +215,84 @@ function CountUp({ value, decimals = 0 }: { value: number; decimals?: number }) 
   return <span ref={ref}>{display}</span>;
 }
 
+const featuredCount = 5;
+
+function FeaturedHeading() {
+  return (
+    <div className="featured-heading">
+      <div><p className="eyebrow">PROJECT <TurnArrowIcon /></p><h2 id="featured-title">FEATURED WORKS</h2></div>
+      <a className="view-all" href="#latest-works">VIEW ALL PROJECT <ArrowIcon /></a>
+    </div>
+  );
+}
+
+function ProjectCaption({ onOpen }: { onOpen: (mode: 'live' | 'design') => void }) {
+  return (
+    <div className="project-caption">
+      <h3>Helping hand</h3>
+      <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum<br className="wide-break" /> has been the industry&apos;s standard dummy text...</p>
+      <div className="project-links">
+        <button onClick={() => onOpen('live')}>Live Link <ArrowIcon /></button>
+        <button onClick={() => onOpen('design')}>Figma Link <ArrowIcon /></button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Desktop: the heading stays stuck at the top and the number/caption block is
+ * stuck on the left — number at the top, text at the bottom — while the cards
+ * scroll on the right. The panel content follows the card nearest the viewport
+ * center; the number slides in right-to-left, the text top-to-bottom.
+ * Mobile keeps the classic per-row layout with a static heading.
+ */
+function FeaturedWorks({ onOpen }: { onOpen: (index: number, mode: 'live' | 'design') => void }) {
+  const cardsRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+  const { scrollYProgress } = useScroll({ target: cardsRef, offset: ['start 0.5', 'end 0.5'] });
+
+  useMotionValueEvent(scrollYProgress, 'change', (value) => {
+    setActive(Math.min(featuredCount - 1, Math.max(0, Math.round(value * (featuredCount - 1)))));
+  });
+
+  const slideTransition = { duration: 0.4, ease: 'easeInOut' as const };
+
+  return (
+    <div className="page-width side-rails featured-inner">
+      <FeaturedHeading />
+      <div className="featured-grid">
+        <aside className="featured-panel">
+          <span className="featured-panel-number" aria-hidden="true">
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span key={active} initial={{ x: '110%', opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: '-110%', opacity: 0 }} transition={slideTransition}>
+                0{active + 1}
+              </motion.span>
+            </AnimatePresence>
+          </span>
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.div key={active} className="featured-panel-caption" initial={{ y: -44, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 44, opacity: 0 }} transition={slideTransition}>
+              <ProjectCaption onOpen={(mode) => onOpen(active, mode)} />
+            </motion.div>
+          </AnimatePresence>
+        </aside>
+        <div className="featured-cards" ref={cardsRef}>
+          {Array.from({ length: featuredCount }, (_, index) => (
+            <article className="featured-card" key={index}>
+              <button className="project-image-button" onClick={() => onOpen(index, 'live')} aria-label={`View Helping hand project ${index + 1}`}>
+                <Image src={images.product} alt="Two orange sunscreen bottles with palm-leaf shadows on a peach background" width={1024} height={1024} loading="lazy" />
+              </button>
+              <div className="project-info featured-card-info">
+                <span className="project-number">0{index + 1}</span>
+                <ProjectCaption onOpen={(mode) => onOpen(index, mode)} />
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Portfolio() {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [openService, setOpenService] = useState<number | null>(0);
@@ -333,30 +411,7 @@ export default function Portfolio() {
         </section>
 
         <section className="featured-section" id="projects" aria-labelledby="featured-title">
-          <div className="page-width side-rails featured-inner">
-            <div className="featured-heading">
-              <div><p className="eyebrow">PROJECT <TurnArrowIcon /></p><h2 id="featured-title">FEATURED WORKS</h2></div>
-              <a className="view-all" href="#latest-works">VIEW ALL PROJECT <ArrowIcon /></a>
-            </div>
-            <div className="projects-list">
-              {Array.from({ length: 5 }, (_, index) => (
-                <article className="project-row" key={index} aria-label={`Helping hand, project ${index + 1}`}>
-                  <div className="project-info">
-                    <span className="project-number">0{index + 1}</span>
-                    <div className="project-caption">
-                      <h3>Helping hand</h3>
-                      <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum<br className="wide-break" /> has been the industry&apos;s standard dummy text...</p>
-                      <div className="project-links">
-                        <button onClick={() => setOverlay({ kind: 'project', index, mode: 'live' })}>Live Link <ArrowIcon /></button>
-                        <button onClick={() => setOverlay({ kind: 'project', index, mode: 'design' })}>Figma Link <ArrowIcon /></button>
-                      </div>
-                    </div>
-                  </div>
-                  <button className="project-image-button" onClick={() => setOverlay({ kind: 'project', index, mode: 'live' })} aria-label={`View Helping hand project ${index + 1}`}><Image src={images.product} alt="Two orange sunscreen bottles with palm-leaf shadows on a peach background" width={1024} height={1024} loading="lazy" /></button>
-                </article>
-              ))}
-            </div>
-          </div>
+          <FeaturedWorks onOpen={(index, mode) => setOverlay({ kind: 'project', index, mode })} />
         </section>
 
         <div className="page-width side-rails services-and-stories">
