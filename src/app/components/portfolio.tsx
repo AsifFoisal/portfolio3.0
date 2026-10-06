@@ -13,8 +13,9 @@ import FlyingPosters from './FlyingPosters';
 import CircularCarousel from './CircularCarousel';
 import ScrollStack, { ScrollStackItem } from './ScrollStack';
 import SiteFooter from './SiteFooter';
+import RadialMenu from './RadialMenu';
 import { ArrowIcon, PhoneIcon, QuoteIcon, TurnArrowIcon } from './Icons';
-import { approach, clients, experience, images, navigation, portfolioUrl, services } from '../data/portfolio';
+import { approach, clients, experience, images, portfolioUrl, services } from '../data/portfolio';
 import { downloadResume } from '../utils/downloadResume';
 
 type Overlay =
@@ -347,12 +348,7 @@ export default function Portfolio() {
 
       <SiteFooter />
 
-      {overlay?.kind === 'menu' && <Dialog label="Navigation menu" className="navigation-dialog" onClose={closeOverlay}>
-        <div className="navigation-content"><p className="dialog-eyebrow">SEAM RAHMAN</p>
-          <nav aria-label="Main navigation">{navigation.map((link, index) => <a href={link.href} key={link.href} style={{ '--item-index': index } as CSSProperties} onClick={(event) => { event.preventDefault(); navigateTo(link.href); }}><span>0{index + 1}</span>{link.label}<ArrowIcon /></a>)}</nav>
-          <button className="solid-button" onClick={() => setOverlay({ kind: 'contact', intent: 'project' })}>Let&apos;s work together <ArrowIcon /></button>
-        </div>
-      </Dialog>}
+      {overlay?.kind === 'menu' && <RadialMenu onClose={closeOverlay} onNavigate={navigateTo} />}
       {overlay?.kind === 'contact' && <Dialog label={overlay.intent === 'call' ? 'Book a discovery call' : 'Contact Seam Rahman'} className="contact-dialog" onClose={closeOverlay}><ContactForm intent={overlay.intent} /></Dialog>}
       {overlay?.kind === 'project' && <Dialog label={`Helping hand project ${overlay.index + 1}`} className="project-dialog" onClose={closeOverlay}>
         <div className="project-dialog-content"><Image className="project-dialog-image" src={images.product} alt="Helping hand orange sunscreen product design" width={1024} height={1024} />

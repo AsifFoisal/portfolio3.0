@@ -15,7 +15,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: #FF4C4E #221e1e; }
+html { scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: #FF4C4E #221e1e; scrollbar-gutter: stable; }
 html.lenis { scroll-behavior: auto; }
 body { margin: 0; min-width: 320px; font-size: calc(16 * var(--unit)); line-height: 1.35; }
 button, input, textarea, select { font: inherit; }
@@ -258,12 +258,6 @@ h1, h2, h3, h4, p { margin: 0; }
 .brief-preview { margin-top: 24px; min-height: 230px; resize: vertical; font-size: 13px; line-height: 1.7; }
 .dialog-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
 .form-status { font-size: 12px; margin-block: 15px; }
-.navigation-dialog { max-width: 580px; }
-.navigation-content nav { display: flex; flex-direction: column; margin-bottom: 32px; }
-.navigation-content nav a { display: flex; align-items: center; gap: 20px; padding: 13px 0; border-bottom: 1px solid #292929; font-size: 28px; font-weight: 450; letter-spacing: -.8px; transition: color 200ms; animation: introduction-in 400ms calc(var(--item-index) * 35ms) both; }
-.navigation-content nav a:hover { color: var(--accent); }
-.navigation-content nav a span { color: var(--accent); font-size: 11px; letter-spacing: 0; }
-.navigation-content nav a svg { width: 22px; height: 22px; margin-left: auto; }
 .project-dialog { width: min(1040px, calc(100% - 40px)); }
 .project-dialog-content { display: grid; grid-template-columns: 1.08fr 1fr; gap: 36px; align-items: center; }
 .project-dialog-image { width: 100%; aspect-ratio: 1; object-fit: cover; }
@@ -470,7 +464,6 @@ h1, h2, h3, h4, p { margin: 0; }
   .dialog-eyebrow { font-size: 10px; margin-bottom: 16px; }
   .form-row { grid-template-columns: 1fr; gap: 18px; }
   .contact-form input, .contact-form textarea, .contact-form select { font-size: 16px; }
-  .navigation-content nav a { font-size: 25px; padding-block: 11px; }
   .project-dialog-image { width: 100%; }
   .project-dialog-copy .dialog-eyebrow { font-size: 9px; }
   .gallery-dialog-footer { padding: 22px 18px; flex-direction: column; align-items: flex-start; }
