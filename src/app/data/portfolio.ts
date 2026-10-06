@@ -5,7 +5,7 @@ export const images = {
   app: '/images/story-app.jpg',
   cap: '/images/cap.jpg',
   face: '/images/face.png',
-  faceHover: '/images/facehover.png',
+  faceHover: '/images/facehover.jpg',
   discover: '/images/discover.png',
   define: '/images/define.png',
   validate: '/images/validate.png',

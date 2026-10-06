@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { services } from '../data/portfolio';
+import Image from 'next/image';
+import { images, services } from '../data/portfolio';
 import { InstagramIcon, WhatsAppIcon } from './Icons';
 
 const HERO_IMAGE = '/images/footer.png';
@@ -46,18 +47,10 @@ function IconCopy() {
 
 function AvatarIllustration() {
   return (
-    <svg width="50" height="50" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-      <circle cx="50" cy="50" r="50" fill="#fef3c7" />
-      <path d="M25 42C25 35 32 30 50 30C68 30 75 35 75 42H25Z" fill="#262626" />
-      <path d="M20 42C20 40 30 38 48 38H80V43H20V42Z" fill="#171717" />
-      <path d="M32 42H68V62C68 71.9411 59.9411 80 50 80C40.0589 80 32 71.9411 32 62V42Z" fill="#fde68a" />
-      <circle cx="41" cy="52" r="7" stroke="#171717" strokeWidth="3" fill="none" />
-      <circle cx="59" cy="52" r="7" stroke="#171717" strokeWidth="3" fill="none" />
-      <line x1="48" y1="52" x2="52" y2="52" stroke="#171717" strokeWidth="3" />
-      <circle cx="41" cy="52" r="2" fill="#171717" />
-      <circle cx="59" cy="52" r="2" fill="#171717" />
-      <path d="M44 64C46 66 54 66 56 64" stroke="#171717" strokeWidth="3" strokeLinecap="round" />
-    </svg>
+    <div className="footer-avatar">
+      <Image src={images.face} alt="" width={56} height={56} loading="lazy" />
+      <Image src={images.faceHover} alt="" width={56} height={56} loading="lazy" className="footer-avatar-hover" />
+    </div>
   );
 }
 
@@ -116,7 +109,7 @@ export default function SiteFooter() {
                 </div>
 
                 <div className="flex items-center space-x-3 pt-1">
-                  <div className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-amber-50 shadow-sm">
+                  <div className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full shadow-sm">
                     <AvatarIllustration />
                   </div>
 
