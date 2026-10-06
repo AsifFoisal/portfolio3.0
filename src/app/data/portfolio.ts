@@ -100,10 +100,31 @@ export const experience = [
   },
 ];
 
-export const clients = [
-  { name: 'Swadhin Biswas', role: 'Full stack developer', position: '38% 40%' },
-  { name: 'Al Amin Mun', role: 'Full stack developer', position: '50% 45%' },
-  { name: 'Naimur Rahman', role: 'Founder Scapes Plan', position: '62% 40%' },
+export const testimonials = [
+  {
+    quote: 'Seam turned a rough idea into a product our users genuinely enjoy. The attention to detail in every screen made the launch feel effortless.',
+    name: 'Swadhin Biswas',
+    role: 'Full stack developer',
+    company: '',
+    avatar: '/images/designer-portrait.jpg',
+    position: '38% 40%',
+  },
+  {
+    quote: 'Working with Seam felt like adding a product strategist to the team, not just a designer. Clear thinking, fast iterations, beautiful results.',
+    name: 'Al Amin Mun',
+    role: 'Full stack developer',
+    company: '',
+    avatar: '/images/designer-portrait.jpg',
+    position: '50% 45%',
+  },
+  {
+    quote: 'Every deliverable arrived polished and on time. Seam understands business goals as well as pixels — a rare combination.',
+    name: 'Naimur Rahman',
+    role: 'Founder',
+    company: 'Scapes Plan',
+    avatar: '/images/designer-portrait.jpg',
+    position: '62% 40%',
+  },
 ];
 
 export const navigation = [

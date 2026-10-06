@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence, animate, useInView, useMotionTemplate, useMotionValueEvent, useMotionValue, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react';
 import Lenis from 'lenis';
@@ -15,9 +15,10 @@ import ScrollStack, { ScrollStackItem } from './ScrollStack';
 import SiteFooter from './SiteFooter';
 import SiteNav from './SiteNav';
 import RadialMenu from './RadialMenu';
-import { ArrowIcon, PhoneIcon, QuoteIcon, TurnArrowIcon } from './Icons';
-import { approach, clients, experience, images, portfolioUrl, services } from '../data/portfolio';
+import { ArrowIcon, PhoneIcon, TurnArrowIcon } from './Icons';
+import { approach, experience, images, portfolioUrl, services, testimonials } from '../data/portfolio';
 import { downloadResume } from '../utils/downloadResume';
+import { cn } from '../utils/cn';
 
 type Overlay =
   | { kind: 'menu' }
@@ -293,12 +294,154 @@ function FeaturedWorks({ onOpen }: { onOpen: (index: number, mode: 'live' | 'des
   );
 }
 
+const titleCls = 'whitespace-nowrap leading-none font-medium tracking-[-0.03em]';
+
+/**
+ * Visual stories — a scroll-scrubbed expanding video box (motion port of the
+ * GSAP reference): the box grows from a small strip to the full viewport while
+ * the video zooms out, side titles slide up once on approach, and the caption
+ * fades in near the end. Mobile shows a static aspect-video box.
+ */
+function Stories() {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: trackRef, offset: ['start start', 'end end'] });
+  const { scrollYProgress: titleProgress } = useScroll({ target: trackRef, offset: ['start 0.75', 'start 0.4'] });
+
+  const boxWidth = useTransform(scrollYProgress, [0, 1], ['22%', '100%']);
+  const boxHeight = useTransform(scrollYProgress, [0, 1], ['14vh', '100vh']);
+  const boxRadius = useTransform(scrollYProgress, [0, 1], [20, 0]);
+  const videoScale = useTransform(scrollYProgress, [0, 1], [1.5, 1]);
+  const captionOpacity = useTransform(scrollYProgress, [0.75, 0.92], [0, 1]);
+  const captionY = useTransform(scrollYProgress, [0.75, 1], [40, 0]);
+  const visualY = useTransform(titleProgress, [0, 0.6], ['105%', '0%']);
+  const storiesY = useTransform(titleProgress, [0.15, 0.75], ['105%', '0%']);
+
+  return (
+    <section className="relative bg-white" id="stories" aria-label="Visual stories">
+      <div className="stories-track relative lg:h-[280vh]" ref={trackRef}>
+        <div className="relative flex flex-col items-center gap-6 pb-[100px] lg:sticky lg:top-0 lg:h-screen lg:justify-center lg:overflow-hidden lg:pb-0">
+          <div className="overflow-hidden lg:hidden">
+            <h2 className={`${titleCls} text-[clamp(64px,17vw,130px)]`}>Visual</h2>
+          </div>
+
+          <motion.div className="stories-box relative aspect-video w-[calc(100%-40px)] rounded-[20px] lg:aspect-auto lg:h-[14vh] lg:w-[22%]" style={{ width: boxWidth, height: boxHeight, borderRadius: boxRadius }}>
+            <div className="absolute inset-0 overflow-hidden rounded-[inherit] bg-neutral-200">
+              <motion.video className="stories-video absolute inset-0 size-full object-cover" style={{ scale: videoScale }} src={VIDEO_SRC} poster={images.story} autoPlay muted loop playsInline preload="metadata" />
+              <div className="absolute inset-0 bg-black/25" />
+            </div>
+
+            <div className="absolute inset-y-0 right-[calc(100%+40px)] hidden items-center lg:flex">
+              <div className="overflow-hidden">
+                <motion.h2 className={`stories-side-title ${titleCls} text-[clamp(80px,9vw,150px)]`} style={{ y: visualY }}>Visual</motion.h2>
+              </div>
+            </div>
+            <div className="absolute inset-y-0 left-[calc(100%+40px)] hidden items-center lg:flex">
+              <div className="overflow-hidden">
+                <motion.h2 className={`stories-side-title ${titleCls} text-[clamp(80px,9vw,150px)]`} style={{ y: storiesY }}>Stories</motion.h2>
+              </div>
+            </div>
+
+            <motion.div className="stories-caption absolute inset-x-0 bottom-0 hidden items-end justify-between gap-10 p-12 text-white lg:flex" style={{ opacity: captionOpacity, y: captionY }}>
+              <div>
+                <p className="flex items-center gap-2.5 text-sm font-semibold uppercase tracking-[0.08em]">
+                  <span className="size-2 rounded-full bg-[#ff5059]" />
+                  Behind the work
+                </p>
+                <p className={`${titleCls} mt-4 max-w-[760px] text-[clamp(40px,4.4vw,72px)]`}>Every brand has a story worth telling beautifully</p>
+              </div>
+              <p className="max-w-[300px] text-lg leading-[1.5] text-white/80">
+                Sketches, systems and late-night details — the craft that turns ideas into brands people feel.
+              </p>
+            </motion.div>
+          </motion.div>
+
+          <div className="overflow-hidden lg:hidden">
+            <h2 className={`${titleCls} text-[clamp(64px,17vw,130px)]`}>Stories</h2>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const QUOTE_DURATION = 7;
+
+/**
+ * Client reviews — auto-advancing quotes with a masked word-by-word reveal,
+ * avatar pills and a progress bar (motion port of the GSAP reference).
+ */
+function Testimonials() {
+  const rootRef = useRef<HTMLElement>(null);
+  const [active, setActive] = useState(0);
+  const [inView, setInView] = useState(false);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { threshold: 0.35 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const t = testimonials[active];
+  const words = t.quote.split(' ');
+
+  return (
+    <section ref={rootRef} className="testimonials page-width" id="clients" aria-labelledby="clients-title">
+      <h2 className="large-heading low-contrast-heading" id="clients-title">WORDS <span>FROM</span> CLIENTS</h2>
+      <div className="mx-auto flex max-w-[1080px] flex-col items-center text-center" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+        <p className="eyebrow">MY CLIENTS&rsquo; REVIEWS</p>
+
+        <span aria-hidden="true" className="mt-10 h-[70px] text-[140px] leading-[0.9] text-[#ff5059] lg:h-[90px] lg:text-[180px]">&ldquo;</span>
+
+        <div aria-live="polite" className="flex min-h-[210px] w-full items-start justify-center sm:min-h-[180px] lg:min-h-[170px]">
+          <motion.blockquote key={active} initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }} className="text-[clamp(24px,3.2vw,44px)] font-medium leading-[1.2] tracking-[-0.025em] text-balance">
+            {words.map((word, i) => (
+              <span key={i}>
+                <span className="inline-block overflow-hidden pb-[0.12em] -mb-[0.12em] align-bottom">
+                  <motion.span className="inline-block will-change-transform" variants={{ hidden: { y: '110%' }, show: { y: 0, transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] } } }}>
+                    {word}
+                  </motion.span>
+                </span>
+                {i < words.length - 1 ? ' ' : null}
+              </span>
+            ))}
+          </motion.blockquote>
+        </div>
+
+        <motion.p key={`author-${active}`} initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 1, delay: 0.25, ease: [0.16, 1, 0.3, 1] }} className="mt-6 text-[#555555]">
+          <span className="font-semibold text-[#1a1a1a]">{t.name}</span> — {t.role}{t.company ? `, ${t.company}` : ''}
+        </motion.p>
+
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-2 md:gap-3">
+          {testimonials.map((person, i) => (
+            <button key={person.name} type="button" onClick={() => setActive(i)} aria-label={`Show review from ${person.name}`} aria-pressed={i === active}
+              className={cn('flex items-center gap-3 rounded-full p-1.5 transition-all duration-500 md:pr-5', i === active ? 'bg-[#f1f1f1]' : 'opacity-50 hover:opacity-100')}>
+              <Image src={person.avatar} alt="" width={44} height={44} loading="lazy" style={{ objectPosition: person.position }}
+                className={cn('size-11 rounded-full object-cover ring-2 transition-all duration-500', i === active ? 'ring-[#ff5059]' : 'ring-transparent grayscale')} />
+              <span className="hidden text-left text-sm font-semibold leading-tight md:block">
+                {person.name}
+                <span className="block text-xs font-medium text-[#555555]/70">{person.company || person.role}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-8 h-[2px] w-40 overflow-hidden rounded bg-[#1a1a1a]/10">
+          <span key={active} className="quote-progress block h-full w-full origin-left bg-[#ff5059]"
+            style={{ animationPlayState: inView && !paused ? 'running' : 'paused' }}
+            onAnimationEnd={() => setActive((current) => (current + 1) % testimonials.length)} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Portfolio() {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [openService, setOpenService] = useState<number | null>(0);
-  const [activeClient, setActiveClient] = useState(1);
   const lenisRef = useRef<Lenis | null>(null);
-  const clientRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const closeOverlay = useCallback(() => setOverlay(null), []);
 
   useEffect(() => {
@@ -333,18 +476,6 @@ export default function Portfolio() {
       else document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
       window.history.replaceState(null, '', href);
     });
-  }
-
-  function handleClientKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
-    let next = index;
-    if (event.key === 'ArrowRight') next = (index + 1) % clients.length;
-    else if (event.key === 'ArrowLeft') next = (index + clients.length - 1) % clients.length;
-    else if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = clients.length - 1;
-    else return;
-    event.preventDefault();
-    setActiveClient(next);
-    clientRefs.current[next]?.focus();
   }
 
   return (
@@ -415,8 +546,7 @@ export default function Portfolio() {
         </section>
 
         <div className="page-width side-rails services-and-stories">
-          <section className="services-section" id="services" aria-labelledby="services-title">
-            <div className="services-heading">
+          <section className="services-section" id="services" aria-labelledby="services-title">            <div className="services-heading">
               <div><p className="eyebrow">MY SERVICES <TurnArrowIcon /></p><h2 className="section-title" id="services-title">SERVICES I OFFER</h2></div>
               <CallButton onClick={() => setOverlay({ kind: 'contact', intent: 'call' })}>Book a Call</CallButton>
             </div>
@@ -437,11 +567,9 @@ export default function Portfolio() {
               })}
             </div>
           </section>
-          <section className="stories-section" id="stories" aria-labelledby="stories-title">
-            <h2 id="stories-title" className="stories-title"><span>VISUAL</span><Image src={images.story} alt="" width={314} height={112} loading="lazy" /><span>STORIES</span></h2>
-            <VideoPoster />
-          </section>
         </div>
+
+        <Stories />
 
         <section className="latest-section" id="latest-works" aria-labelledby="latest-title">
           <h2 id="latest-title">LATEST <span>DESIGN</span> WORKS</h2>
@@ -481,15 +609,7 @@ export default function Portfolio() {
           </ScrollStack>
         </section>
 
-        <section className="testimonials page-width" id="clients" aria-labelledby="clients-title">
-          <h2 className="large-heading low-contrast-heading" id="clients-title">WORDS <span>FROM</span> CLIENTS</h2>
-          <QuoteIcon className="quote-mark" />
-          <div className="testimonial-space" id="client-panel" role="tabpanel" aria-labelledby={`client-tab-${activeClient}`} aria-live="polite"><p className="sr-only">{clients[activeClient].name}, {clients[activeClient].role}</p></div>
-          <div className="client-tabs" role="tablist" aria-label="Clients">
-            {clients.map((client, index) => <button className={`client-tab ${activeClient === index ? 'is-active' : ''}`} key={client.name} id={`client-tab-${index}`} role="tab" aria-selected={activeClient === index} aria-controls="client-panel" tabIndex={activeClient === index ? 0 : -1} ref={(node) => { clientRefs.current[index] = node; }} onKeyDown={(event) => handleClientKey(event, index)} onClick={() => setActiveClient(index)}><Image src={images.portrait} style={{ objectPosition: client.position }} alt="" width={44} height={44} loading="lazy" /><span><strong>{client.name}</strong><small>{client.role}</small></span></button>)}
-          </div>
-          <div className="client-progress" aria-hidden="true"><span style={{ '--active-client': activeClient } as CSSProperties} /></div>
-        </section>
+        <Testimonials />
       </main>
 
       <SiteFooter />

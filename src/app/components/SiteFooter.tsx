@@ -1,12 +1,14 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import Image from 'next/image';
+import { motion, useAnimationFrame, useMotionValue, useSpring } from 'motion/react';
 import { images, services } from '../data/portfolio';
 import { InstagramIcon, WhatsAppIcon } from './Icons';
 
 const HERO_IMAGE = '/images/footer.png';
 const EMAIL = 'forwork5723@gmail.com';
+const WHATSAPP_URL = 'https://wa.me/';
 
 function IconBolt() {
   return (
@@ -54,7 +56,85 @@ function AvatarIllustration() {
   );
 }
 
-const MARQUEE_ITEMS = Array.from({ length: 4 });
+/** Infinite "Let's work together" marquee — runs on its own, reverses with the
+ * scroll direction, links to WhatsApp, and shows a "Let's Talk" cursor bubble
+ * on hover. Motion port of the GSAP reference. */
+function FooterMarquee({ whatsappUrl }: { whatsappUrl: string }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0);
+  const direction = useRef(-1);
+  const lastScrollY = useRef(0);
+  const [hovering, setHovering] = useState(false);
+
+  const cursorX = useMotionValue(0);
+  const cursorY = useMotionValue(0);
+  const cursorSpringX = useSpring(cursorX, { stiffness: 400, damping: 35, mass: 0.6 });
+  const cursorSpringY = useSpring(cursorY, { stiffness: 400, damping: 35, mass: 0.6 });
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (Math.abs(y - lastScrollY.current) > 1) {
+        // Scrolling down drifts the marquee left (like the reference tween);
+        // scrolling up reverses it to the right.
+        direction.current = y > lastScrollY.current ? -1 : 1;
+        lastScrollY.current = y;
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useAnimationFrame((_, delta) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const half = track.scrollWidth / 2;
+    if (!half) return;
+    let current = x.get() + ((direction.current * half) / 30) * (delta / 1000);
+    if (current <= -half) current += half;
+    if (current > 0) current -= half;
+    x.set(current);
+  });
+
+  function trackPointer(event: MouseEvent<HTMLAnchorElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    cursorX.set(event.clientX - rect.left);
+    cursorY.set(event.clientY - rect.top);
+  }
+
+  return (
+    <a
+      href={whatsappUrl}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="Let's work together — chat on WhatsApp"
+      className="group relative mt-5 block cursor-none overflow-hidden border-t border-gray-100 pt-8"
+      onMouseEnter={(event) => { setHovering(true); trackPointer(event); }}
+      onMouseMove={trackPointer}
+      onMouseLeave={() => setHovering(false)}
+    >
+      <motion.div ref={trackRef} className="flex w-max will-change-transform" style={{ x }}>
+        {[0, 1].map((k) => (
+          <div key={k} aria-hidden={k === 1 || undefined} className="flex shrink-0 items-center">
+            {Array.from({ length: 3 }).map((_, j) => (
+              <span key={j} className="flex items-center">
+                <span className="whitespace-nowrap px-6 text-[clamp(40px,6vw,90px)] font-extrabold uppercase leading-none tracking-wider transition-colors duration-500 group-hover:text-[#ff5059] lg:px-10">
+                  Let&rsquo;s work together
+                </span>
+                <span className="shrink-0 text-[clamp(22px,3vw,44px)] leading-none text-[#ff5059] transition-all duration-1000 group-hover:rotate-180 group-hover:text-[#1a1a1a]">✦</span>
+              </span>
+            ))}
+          </div>
+        ))}
+      </motion.div>
+      {hovering && (
+        <motion.div className="pointer-events-none absolute left-0 top-0 z-10" style={{ x: cursorSpringX, y: cursorSpringY }}>
+          <span className="grid size-24 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[#ff5059] text-sm font-semibold uppercase text-white">Let&rsquo;s Talk</span>
+        </motion.div>
+      )}
+    </a>
+  );
+}
 
 export default function SiteFooter() {
   const [toast, setToast] = useState('');
@@ -89,7 +169,7 @@ export default function SiteFooter() {
   return (
     <footer className="site-footer">
       <div
-        className="relative w-full overflow-hidden bg-cover bg-center h-265 pt-44 pb-6 sm:pb-10 sm:pt-64 md:pt-80 lg:pt-96"
+        className="relative w-full overflow-hidden bg-cover bg-center min-h-265 pt-44 pb-6 sm:pb-10 sm:pt-64 md:pt-80 lg:pt-96"
         style={{ backgroundImage: `url('${HERO_IMAGE}')` }}
       >
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
@@ -114,7 +194,7 @@ export default function SiteFooter() {
                   </div>
 
                   <a
-                    href="https://wa.me/"
+                    href={WHATSAPP_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn-black inline-flex cursor-pointer items-center space-x-2.5 rounded-full px-5 py-2.5 text-sm font-medium"
@@ -177,24 +257,7 @@ export default function SiteFooter() {
               </div>
             </div>
 
-            <div className="w-full overflow-hidden pt-5">
-              <div className="footer-marquee-track">
-                {[0, 1].map((group) => (
-                  <div
-                    key={group}
-                    className="footer-marquee-group text-2xl font-extrabold tracking-wider uppercase sm:text-3xl md:text-4xl lg:text-5xl"
-                    aria-hidden={group === 1 || undefined}
-                  >
-                    {MARQUEE_ITEMS.map((_, index) => (
-                      <span key={index} className="flex items-center">
-                        <span className="marquee-text">LET&apos;S WORK TOGETHER</span>
-                        <span className="text-gray-300">✦</span>
-                      </span>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
+            <FooterMarquee whatsappUrl={WHATSAPP_URL} />
           </div>
         </div>
       </div>
