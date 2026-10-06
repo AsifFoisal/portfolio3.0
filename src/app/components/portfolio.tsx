@@ -13,6 +13,7 @@ import FlyingPosters from './FlyingPosters';
 import CircularCarousel from './CircularCarousel';
 import ScrollStack, { ScrollStackItem } from './ScrollStack';
 import SiteFooter from './SiteFooter';
+import SiteNav from './SiteNav';
 import RadialMenu from './RadialMenu';
 import { ArrowIcon, PhoneIcon, QuoteIcon, TurnArrowIcon } from './Icons';
 import { approach, clients, experience, images, portfolioUrl, services } from '../data/portfolio';
@@ -347,6 +348,7 @@ export default function Portfolio() {
       </main>
 
       <SiteFooter />
+      <SiteNav />
 
       {overlay?.kind === 'menu' && <RadialMenu onClose={closeOverlay} onNavigate={navigateTo} />}
       {overlay?.kind === 'contact' && <Dialog label={overlay.intent === 'call' ? 'Book a discovery call' : 'Contact Seam Rahman'} className="contact-dialog" onClose={closeOverlay}><ContactForm intent={overlay.intent} /></Dialog>}

@@ -966,8 +966,10 @@ const CircularCarousel = ({
                   aria-roledescription="slide"
                   aria-label={`${item.title || item.alt || `Image ${index + 1}`}, ${index + 1} of ${count}`}
                 >
-                  {tiles.map((tile) => renderTile(item, tile, false))}
-                  {layout.backfaces && tiles.map((tile) => renderTile(item, tile, true))}
+                  <div className="circular-carousel__body">
+                    {tiles.map((tile) => renderTile(item, tile, false))}
+                    {layout.backfaces && tiles.map((tile) => renderTile(item, tile, true))}
+                  </div>
                 </div>
               ))}
             </div>
@@ -975,19 +977,19 @@ const CircularCarousel = ({
         </div>
       </div>
       {captions && current && (
-        <div className="circular-carousel__caption" aria-hidden="true">
+        <div className="circular-carousel__caption " aria-hidden="true">
           <span key={active} className="circular-carousel__title">
             {current.title || current.alt}
-            {current.subtitle && <span className="circular-carousel__subtitle">{current.subtitle}</span>}
+            {current.subtitle && <span className="circular-carousel__subtitle text-white">{current.subtitle}</span>}
           </span>
-          <span className="circular-carousel__count">
+          <span className="circular-carousel__count text-white">
             <Digits value={active + 1} />
             <span className="circular-carousel__slash">/</span>
             <span>{String(count).padStart(2, '0')}</span>
           </span>
         </div>
       )}
-      <div className="circular-carousel__live" aria-live="polite" aria-atomic="true">
+      <div className="circular-carousel__live " aria-live="polite" aria-atomic="true">
         {`${label}, ${active + 1} of ${count}`}
       </div>
     </div>

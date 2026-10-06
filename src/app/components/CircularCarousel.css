@@ -77,6 +77,22 @@
   top: 0;
 }
 
+/* Inner wrapper that carries the hover scale — the card's own transform is
+   rewritten by the animation loop every frame, so the scale must live here. */
+.circular-carousel__body {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.circular-carousel__card:hover .circular-carousel__body {
+  transform: scale3d(1.08, 1.08, 1.08);
+}
+
 .circular-carousel__tile {
   position: absolute;
   outline: 1px solid transparent;
@@ -148,7 +164,7 @@
 
 .circular-carousel__subtitle {
   font-weight: 400;
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 .circular-carousel__count {
@@ -216,7 +232,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .circular-carousel__stage,
-  .circular-carousel__reel {
+  .circular-carousel__reel,
+  .circular-carousel__body {
     transition: none;
   }
 
