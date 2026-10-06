@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react';
 import Image from 'next/image';
-import { motion, useMotionValue, useSpring } from 'motion/react';
+import { motion, animate, useInView, useMotionTemplate, useMotionValue, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react';
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import Dialog from './Dialog';
@@ -55,13 +55,25 @@ const carouselItems = [
   })),
 ];
 
-function VideoPoster({ rounded = false }: { rounded?: boolean }) {
+function VideoPoster({ rounded = false, expandOnScroll = false }: { rounded?: boolean; expandOnScroll?: boolean }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const [started, setStarted] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [failed, setFailed] = useState(false);
+
+  const { scrollYProgress: clipProgress } = useScroll({
+    target: frameRef,
+    offset: ['start 0.95', 'center 0.55'],
+  });
+  const { scrollYProgress: zoomProgress } = useScroll({
+    target: frameRef,
+    offset: ['start end', 'end start'],
+  });
+  const frameInset = useTransform(clipProgress, [0, 1], [16, 0]);
+  const frameClipPath = useMotionTemplate`inset(0% ${frameInset}% 0% ${frameInset}% round var(--reel-radius, 0px))`;
+  const mediaScale = useTransform(zoomProgress, [0, 1], [1.3, 1]);
 
   const cursorX = useMotionValue(0);
   const cursorY = useMotionValue(0);
@@ -87,9 +99,10 @@ function VideoPoster({ rounded = false }: { rounded?: boolean }) {
   }
 
   return (
-    <div
+    <motion.div
       ref={frameRef}
       className={`video-poster ${rounded ? 'video-poster-rounded' : ''} ${failed ? '' : 'cursor-hidden'}`}
+      style={expandOnScroll ? { clipPath: frameClipPath } : undefined}
       role="button"
       tabIndex={0}
       aria-label={playing ? 'Pause visual story video' : 'Play visual story video'}
@@ -99,21 +112,23 @@ function VideoPoster({ rounded = false }: { rounded?: boolean }) {
       onMouseMove={trackPointer}
       onMouseLeave={() => setHovering(false)}
     >
-      <Image src={images.story} alt="A woman working on her laptop in a bright, sunlit kitchen" fill sizes="100vw" priority={rounded} />
-      {started && (
-        <video
-          ref={videoRef}
-          className="video-inline"
-          src={VIDEO_SRC}
-          poster={images.story}
-          playsInline
-          preload="metadata"
-          onError={() => setFailed(true)}
-          onPlay={() => setPlaying(true)}
-          onPause={() => setPlaying(false)}
-          onEnded={() => setPlaying(false)}
-        />
-      )}
+      <motion.div className="video-media" style={expandOnScroll ? { scale: mediaScale } : undefined}>
+        <Image src={images.story} alt="A woman working on her laptop in a bright, sunlit kitchen" fill sizes="100vw" priority={rounded} />
+        {started && (
+          <video
+            ref={videoRef}
+            className="video-inline"
+            src={VIDEO_SRC}
+            poster={images.story}
+            playsInline
+            preload="metadata"
+            onError={() => setFailed(true)}
+            onPlay={() => setPlaying(true)}
+            onPause={() => setPlaying(false)}
+            onEnded={() => setPlaying(false)}
+          />
+        )}
+      </motion.div>
       {failed && (
         <a className="outline-button video-inline-fallback" href={VIDEO_FALLBACK} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>
           Watch the film <ArrowIcon />
@@ -124,8 +139,80 @@ function VideoPoster({ rounded = false }: { rounded?: boolean }) {
           <span>{playing ? 'PAUSE' : 'PLAY'}</span>
         </motion.div>
       )}
-    </div>
+    </motion.div>
   );
+}
+
+/** About paragraph segments — `accent` mirrors the previous <em> styling. */
+const aboutSegments: Array<{ text: string; accent?: boolean }> = [
+  { text: "I'm a UI/UX & Product Designer with 2.5+ years of experience, currently working with a " },
+  { text: 'multinational company', accent: true },
+  { text: ", focused on solving complex product problems through simple, intuitive, and user-centered design. I've worked across multiple digital products, including " },
+  { text: 'Crypto currency', accent: true },
+  { text: ' and ' },
+  { text: 'Perfect Panel', accent: true },
+  { text: ', combining my BBA background, ' },
+  { text: 'marketing & sales knowledge', accent: true },
+  { text: ' and product thinking to help startups and digital businesses build better digital experiences.' },
+];
+
+const aboutWords: Array<{ word: string; accent: boolean; spaceAfter: boolean }> = [];
+aboutSegments.forEach((segment, segmentIndex) => {
+  const words = segment.text.split(' ').filter(Boolean);
+  const nextSegment = aboutSegments[segmentIndex + 1];
+  words.forEach((word, wordIndex) => {
+    // Punctuation-led segments (", focused on…") attach to the previous word with no gap.
+    const joinsNextSegment = wordIndex === words.length - 1 && /^[,.!?;:]/.test(nextSegment?.text ?? '');
+    aboutWords.push({ word, accent: !!segment.accent, spaceAfter: !joinsNextSegment });
+  });
+});
+
+/** Words go from dimmed to full opacity one by one as the paragraph scrolls through the viewport. */
+function AboutParagraph() {
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const { scrollYProgress } = useScroll({ target: textRef, offset: ['start 0.8', 'end 0.45'] });
+  const total = aboutWords.length;
+
+  return (
+    <p ref={textRef}>
+      {aboutWords.map((item, index) => (
+        <AboutWord key={index} progress={scrollYProgress} index={index} total={total} accent={item.accent} spaceAfter={item.spaceAfter}>
+          {item.word}
+        </AboutWord>
+      ))}
+    </p>
+  );
+}
+
+function AboutWord({ progress, index, total, accent, spaceAfter, children }: { progress: MotionValue<number>; index: number; total: number; accent: boolean; spaceAfter: boolean; children: string }) {
+  const start = index / total;
+  const end = Math.min(1, (index + 1.5) / total);
+  const opacity = useTransform(progress, [start, end], [0.14, 1]);
+  return (
+    <motion.span style={{ opacity }}>
+      {accent ? <em>{children}</em> : children}
+      {spaceAfter ? ' ' : null}
+    </motion.span>
+  );
+}
+
+/** Counts up from zero the first time it scrolls into view. */
+function CountUp({ value, decimals = 0 }: { value: number; decimals?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, amount: 0.6 });
+  const [display, setDisplay] = useState(() => (0).toFixed(decimals));
+
+  useEffect(() => {
+    if (!inView) return;
+    const controls = animate(0, value, {
+      duration: 1.8,
+      ease: 'easeOut',
+      onUpdate: (latest) => setDisplay(latest.toFixed(decimals)),
+    });
+    return () => controls.stop();
+  }, [inView, value, decimals]);
+
+  return <span ref={ref}>{display}</span>;
 }
 
 export default function Portfolio() {
@@ -223,20 +310,23 @@ export default function Portfolio() {
             />
           </h1>
           <div className="hero-disciplines"><span>HELPING STARTUPS SCALE</span><span>SAAS EXPERIENCE</span><span>BUILDING DIGITAL PRODUCTS</span></div>
-          <VideoPoster rounded />
+          <VideoPoster rounded expandOnScroll />
         </section>
 
         <section className="about page-width" id="about" aria-labelledby="about-title">
           <h2 className="section-title low-contrast-heading" id="about-title">ABOUT <span>ME</span></h2>
           <div className="about-layout">
-            <div className="about-media"><FlyingPosters items={aboutPosters} planeWidth={250} planeHeight={280} distortion={3} /></div>
+            <div className="about-media"><FlyingPosters items={aboutPosters} planeWidth={290} planeHeight={322} distortion={3} /></div>
             <div className="about-copy">
-              <p>I&apos;m a UI/UX &amp; Product Designer with 2.5+ years of experience, currently working with a <em>multinational company</em>, focused on solving complex product problems through simple, intuitive, and user-centered design. I&apos;ve worked across multiple digital products, including <em>Crypto currency</em> and <em>Perfect Panel</em>, combining my BBA background, <em>marketing &amp; sales knowledge</em>, and product thinking to help startups and digital businesses build better digital experiences.</p>
+              <AboutParagraph />
               <div className="about-stats">
-                <div><strong>2.5<span>+</span></strong><p>Years Experience</p></div>
-                <div><strong>65<span>+</span></strong><p>Projects delivered</p></div>
-                <div><strong>96<span>%</span></strong><p>Returning clients</p></div>
-                <Image src={images.cap} alt="" width={120} height={110} loading="lazy" />
+                <div><strong><CountUp value={2.5} decimals={1} /><span>+</span></strong><p>Years Experience</p></div>
+                <div><strong><CountUp value={65} /><span>+</span></strong><p>Projects delivered</p></div>
+                <div><strong><CountUp value={96} /><span>%</span></strong><p>Returning clients</p></div>
+                <div className="about-face">
+                  <Image src={images.face} alt="" width={120} height={110} loading="lazy" />
+                  <Image src={images.faceHover} alt="" width={120} height={110} loading="lazy" className="about-face-hover" />
+                </div>
               </div>
             </div>
           </div>
