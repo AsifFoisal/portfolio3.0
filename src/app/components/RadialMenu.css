@@ -55,7 +55,7 @@
   user-select: none;
   letter-spacing: 0.28em;
   font-weight: 700;
-  font-family: var(--font-jakarta), var(--font-inter), 'Inter', Arial, sans-serif;
+  font-family: var(--font-jamjuree), var(--font-inter), 'Inter', Arial, sans-serif;
   fill: #1a1a1a;
   transition: fill 0.2s ease;
 }

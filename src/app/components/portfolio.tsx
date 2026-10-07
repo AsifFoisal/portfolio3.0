@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence, animate, useInView, useMotionTemplate, useMotionValueEvent, useMotionValue, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react';
 import Lenis from 'lenis';
@@ -16,7 +16,8 @@ import SiteFooter from './SiteFooter';
 import SiteNav from './SiteNav';
 import RadialMenu from './RadialMenu';
 import { ArrowIcon, PhoneIcon, TurnArrowIcon } from './Icons';
-import { approach, experience, images, portfolioUrl, services, testimonials } from '../data/portfolio';
+import { ContentProvider, SectionHeading, useSiteContent } from '../data/content-context';
+import type { Project, SiteContent } from '../data/content-types';
 import { downloadResume } from '../utils/downloadResume';
 import { cn } from '../utils/cn';
 
@@ -31,32 +32,9 @@ function CallButton({ children, onClick }: { children: string; onClick: () => vo
   return <button className="call-button" onClick={onClick}>{children}<span className="call-button-icon"><PhoneIcon /></span></button>;
 }
 
-const VIDEO_SRC = 'https://videos.pexels.com/video-files/7423593/7423593-hd_1280_720_30fps.mp4';
-const VIDEO_FALLBACK = 'https://www.pexels.com/video/woman-using-a-laptop-7423593/';
-
-// Module-level so the FlyingPosters effect doesn't re-initialise on every render.
-const aboutPosters = [
-  '/images/orange-sunscreen.jpg',
-  '/images/story-app.jpg',
-  '/images/designer-portrait.jpg',
-  '/images/visual-story.jpg',
-];
-
-const carouselItems = [
-  { src: images.app, alt: 'Story Creating App with colorful mobile interfaces and a friendly 3D wizard', title: 'Story Creating App', subtitle: 'Mobile design' },
-  { src: images.product, alt: 'Two orange sunscreen bottles with palm-leaf shadows on a peach background', title: 'Helping Hand', subtitle: 'Product design' },
-  { src: images.portrait, alt: 'Portrait of Seam Rahman', title: 'Seam Rahman', subtitle: 'Product designer' },
-  { src: images.story, alt: 'A woman working on her laptop in a bright, sunlit kitchen', title: 'Visual Stories', subtitle: 'Film' },
-  { src: images.cap, alt: 'A graduation cap resting on a plain surface', title: 'Milestones', subtitle: 'Journey' },
-  ...Array.from({ length: 10 }, (_, i) => ({
-    src: `https://picsum.photos/seed/latest-${i + 1}/900/900`,
-    alt: `Dummy design ${i + 1}`,
-    title: `Dummy ${i + 1}`,
-    subtitle: 'Placeholder',
-  })),
-];
-
 function VideoPoster({ rounded = false, expandOnScroll = false }: { rounded?: boolean; expandOnScroll?: boolean }) {
+  const content = useSiteContent();
+  const reel = content.hero.reel;
   const frameRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -114,13 +92,13 @@ function VideoPoster({ rounded = false, expandOnScroll = false }: { rounded?: bo
       onMouseLeave={() => setHovering(false)}
     >
       <motion.div className="video-media" style={expandOnScroll ? { scale: mediaScale } : undefined}>
-        <Image src={images.story} alt="A woman working on her laptop in a bright, sunlit kitchen" fill sizes="100vw" priority={rounded} />
+        <Image src={reel.poster} alt={reel.posterAlt} fill sizes="100vw" priority={rounded} />
         {started && (
           <video
             ref={videoRef}
             className="video-inline"
-            src={VIDEO_SRC}
-            poster={images.story}
+            src={reel.videoUrl}
+            poster={reel.poster}
             playsInline
             preload="metadata"
             onError={() => setFailed(true)}
@@ -131,69 +109,54 @@ function VideoPoster({ rounded = false, expandOnScroll = false }: { rounded?: bo
         )}
       </motion.div>
       {failed && (
-        <a className="outline-button video-inline-fallback" href={VIDEO_FALLBACK} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>
+        <a className="outline-button video-inline-fallback" href={reel.videoPageUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>
           Watch the film <ArrowIcon />
         </a>
       )}
       {hovering && !failed && (
         <motion.div className="video-cursor" style={{ x: cursorSpringX, y: cursorSpringY }} initial={{ opacity: 0 }} animate={{ opacity: 1, scale: playing ? 0.92 : 1 }}>
-          <span>{playing ? 'PAUSE' : 'PLAY'}</span>
+          <span>{playing ? reel.pauseLabel : reel.playLabel}</span>
         </motion.div>
       )}
     </motion.div>
   );
 }
 
-/** About paragraph segments — `accent` mirrors the previous <em> styling. */
-const aboutSegments: Array<{ text: string; accent?: boolean }> = [
-  { text: "I'm a UI/UX & Product Designer with 2.5+ years of experience, currently working with a " },
-  { text: 'multinational company', accent: true },
-  { text: ", focused on solving complex product problems through simple, intuitive, and user-centered design. I've worked across multiple digital products, including " },
-  { text: 'Crypto currency', accent: true },
-  { text: ' and ' },
-  { text: 'Perfect Panel', accent: true },
-  { text: ', combining my BBA background, ' },
-  { text: 'marketing & sales knowledge', accent: true },
-  { text: ' and product thinking to help startups and digital businesses build better digital experiences.' },
-];
-
-const aboutWords: Array<{ word: string; accent: boolean; spaceAfter: boolean }> = [];
-aboutSegments.forEach((segment, segmentIndex) => {
-  const words = segment.text.split(' ').filter(Boolean);
-  const nextSegment = aboutSegments[segmentIndex + 1];
-  words.forEach((word, wordIndex) => {
-    // Punctuation-led segments (", focused on…") attach to the previous word with no gap.
-    const joinsNextSegment = wordIndex === words.length - 1 && /^[,.!?;:]/.test(nextSegment?.text ?? '');
-    aboutWords.push({ word, accent: !!segment.accent, spaceAfter: !joinsNextSegment });
-  });
-});
-
-/** Words go from dimmed to full opacity one by one as the paragraph scrolls through the viewport. */
 function AboutParagraph() {
-  const textRef = useRef<HTMLParagraphElement>(null);
-  const { scrollYProgress } = useScroll({ target: textRef, offset: ['start 0.8', 'end 0.45'] });
-  const total = aboutWords.length;
+  const content = useSiteContent();
+  const segments = content.about.segments;
+
+  /** Words go from dimmed to full opacity one by one as the paragraph scrolls through the viewport. */
+  const words = useMemo(() => {
+    const list: Array<{ word: string; accent: boolean; spaceAfter: boolean }> = [];
+    segments.forEach((segment, segmentIndex) => {
+      const nextSegment = segments[segmentIndex + 1];
+      const segmentWords = segment.text.split(' ').filter(Boolean);
+      segmentWords.forEach((word, wordIndex) => {
+        const nextSegmentStartsPunctuated = /^[,.!?;:]/.test(nextSegment?.text ?? '');
+        const joinsNextSegment = wordIndex === segmentWords.length - 1 && nextSegmentStartsPunctuated;
+        list.push({ word, accent: !!segment.accent, spaceAfter: !joinsNextSegment });
+      });
+    });
+    return list;
+  }, [segments]);
+
+  const ref = useRef<HTMLParagraphElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.9', 'end 0.45'] });
+  const [visibleCount, setVisibleCount] = useState(0);
+  useMotionValueEvent(scrollYProgress, 'change', (value) => {
+    setVisibleCount(Math.ceil(value * words.length));
+  });
 
   return (
-    <p ref={textRef}>
-      {aboutWords.map((item, index) => (
-        <AboutWord key={index} progress={scrollYProgress} index={index} total={total} accent={item.accent} spaceAfter={item.spaceAfter}>
+    <p ref={ref}>
+      {words.map((item, index) => (
+        <span key={index} className={cn(item.accent && 'accent-word')} style={{ color: index < visibleCount ? undefined : 'rgba(26,26,26,0.24)', transition: 'color 300ms' }}>
           {item.word}
-        </AboutWord>
+          {item.spaceAfter ? ' ' : null}
+        </span>
       ))}
     </p>
-  );
-}
-
-function AboutWord({ progress, index, total, accent, spaceAfter, children }: { progress: MotionValue<number>; index: number; total: number; accent: boolean; spaceAfter: boolean; children: string }) {
-  const start = index / total;
-  const end = Math.min(1, (index + 1.5) / total);
-  const opacity = useTransform(progress, [start, end], [0.14, 1]);
-  return (
-    <motion.span style={{ opacity }}>
-      {accent ? <em>{children}</em> : children}
-      {spaceAfter ? ' ' : null}
-    </motion.span>
   );
 }
 
@@ -216,25 +179,27 @@ function CountUp({ value, decimals = 0 }: { value: number; decimals?: number }) 
   return <span ref={ref}>{display}</span>;
 }
 
-const featuredCount = 5;
-
 function FeaturedHeading() {
+  const content = useSiteContent();
+  const featured = content.featured;
   return (
     <div className="featured-heading">
-      <div><p className="eyebrow">PROJECT <TurnArrowIcon /></p><h2 id="featured-title">FEATURED WORKS</h2></div>
-      <a className="view-all" href="#latest-works">VIEW ALL PROJECT <ArrowIcon /></a>
+      <div><p className="eyebrow">{featured.eyebrow} <TurnArrowIcon /></p><h2 id="featured-title"><SectionHeading heading={featured.heading} /></h2></div>
+      <a className="view-all" href="#latest-works">{featured.viewAllLabel} <ArrowIcon /></a>
     </div>
   );
 }
 
-function ProjectCaption({ onOpen }: { onOpen: (mode: 'live' | 'design') => void }) {
+function ProjectCaption({ project, onOpen }: { project: Project; onOpen: (mode: 'live' | 'design') => void }) {
+  const content = useSiteContent();
+  const featured = content.featured;
   return (
     <div className="project-caption">
-      <h3>Helping hand</h3>
-      <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum<br className="wide-break" /> has been the industry&apos;s standard dummy text...</p>
+      <h3>{project.title}</h3>
+      <p>{project.description}<br className="wide-break" /></p>
       <div className="project-links">
-        <button onClick={() => onOpen('live')}>Live Link <ArrowIcon /></button>
-        <button onClick={() => onOpen('design')}>Figma Link <ArrowIcon /></button>
+        <button onClick={() => onOpen('live')}>{featured.liveLinkLabel} <ArrowIcon /></button>
+        <button onClick={() => onOpen('design')}>{featured.figmaLinkLabel} <ArrowIcon /></button>
       </div>
     </div>
   );
@@ -248,15 +213,18 @@ function ProjectCaption({ onOpen }: { onOpen: (mode: 'live' | 'design') => void 
  * Mobile keeps the classic per-row layout with a static heading.
  */
 function FeaturedWorks({ onOpen }: { onOpen: (index: number, mode: 'live' | 'design') => void }) {
+  const content = useSiteContent();
+  const projects = content.featured.projects;
   const cardsRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const { scrollYProgress } = useScroll({ target: cardsRef, offset: ['start 0.5', 'end 0.5'] });
 
   useMotionValueEvent(scrollYProgress, 'change', (value) => {
-    setActive(Math.min(featuredCount - 1, Math.max(0, Math.round(value * (featuredCount - 1)))));
+    setActive(Math.min(projects.length - 1, Math.max(0, Math.round(value * (projects.length - 1)))));
   });
 
   const slideTransition = { duration: 0.4, ease: 'easeInOut' as const };
+  const activeProject = projects[active] ?? projects[0];
 
   return (
     <div className="page-width side-rails featured-inner">
@@ -272,19 +240,19 @@ function FeaturedWorks({ onOpen }: { onOpen: (index: number, mode: 'live' | 'des
           </span>
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.div key={active} className="featured-panel-caption" initial={{ y: -44, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 44, opacity: 0 }} transition={slideTransition}>
-              <ProjectCaption onOpen={(mode) => onOpen(active, mode)} />
+              {activeProject && <ProjectCaption project={activeProject} onOpen={(mode) => onOpen(active, mode)} />}
             </motion.div>
           </AnimatePresence>
         </aside>
         <div className="featured-cards" ref={cardsRef}>
-          {Array.from({ length: featuredCount }, (_, index) => (
-            <article className="featured-card" key={index}>
-              <button className="project-image-button" onClick={() => onOpen(index, 'live')} aria-label={`View Helping hand project ${index + 1}`}>
-                <Image src={images.product} alt="Two orange sunscreen bottles with palm-leaf shadows on a peach background" width={1024} height={1024} loading="lazy" />
+          {projects.map((project, index) => (
+            <article className="featured-card" key={`${project.title}-${index}`}>
+              <button className="project-image-button" onClick={() => onOpen(index, 'live')} aria-label={`View ${project.title} project ${index + 1}`}>
+                <Image src={project.image} alt={project.title} width={1024} height={1024} loading="lazy" />
               </button>
               <div className="project-info featured-card-info">
                 <span className="project-number">0{index + 1}</span>
-                <ProjectCaption onOpen={(mode) => onOpen(index, mode)} />
+                <ProjectCaption project={project} onOpen={(mode) => onOpen(index, mode)} />
               </div>
             </article>
           ))}
@@ -303,6 +271,8 @@ const titleCls = 'whitespace-nowrap leading-none font-medium tracking-[-0.03em]'
  * fades in near the end. Mobile shows a static aspect-video box.
  */
 function Stories() {
+  const content = useSiteContent();
+  const stories = content.stories;
   const trackRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: trackRef, offset: ['start start', 'end end'] });
   const { scrollYProgress: titleProgress } = useScroll({ target: trackRef, offset: ['start 0.75', 'start 0.4'] });
@@ -321,42 +291,42 @@ function Stories() {
       <div className="stories-track relative lg:h-[280vh]" ref={trackRef}>
         <div className="relative flex flex-col items-center gap-6 pb-[100px] lg:sticky lg:top-0 lg:h-screen lg:justify-center lg:overflow-hidden lg:pb-0">
           <div className="overflow-hidden lg:hidden">
-            <h2 className={`${titleCls} text-[clamp(64px,17vw,130px)]`}>Visual</h2>
+            <h2 className={`${titleCls} text-[clamp(64px,17vw,130px)]`}>{stories.mobileTitleTop}</h2>
           </div>
 
           <motion.div className="stories-box relative aspect-video w-[calc(100%-40px)] rounded-[20px] lg:aspect-auto lg:h-[14vh] lg:w-[22%]" style={{ width: boxWidth, height: boxHeight, borderRadius: boxRadius }}>
             <div className="absolute inset-0 overflow-hidden rounded-[inherit] bg-neutral-200">
-              <motion.video className="stories-video absolute inset-0 size-full object-cover" style={{ scale: videoScale }} src={VIDEO_SRC} poster={images.story} autoPlay muted loop playsInline preload="metadata" />
+              <motion.video className="stories-video absolute inset-0 size-full object-cover" style={{ scale: videoScale }} src={stories.videoUrl} poster={stories.poster} autoPlay muted loop playsInline preload="metadata" />
               <div className="absolute inset-0 bg-black/25" />
             </div>
 
             <div className="absolute inset-y-0 right-[calc(100%+40px)] hidden items-center lg:flex">
               <div className="overflow-hidden">
-                <motion.h2 className={`stories-side-title ${titleCls} text-[clamp(80px,9vw,150px)]`} style={{ y: visualY }}>Visual</motion.h2>
+                <motion.h2 className={`stories-side-title ${titleCls} text-[clamp(80px,9vw,150px)]`} style={{ y: visualY }}>{stories.mobileTitleTop}</motion.h2>
               </div>
             </div>
             <div className="absolute inset-y-0 left-[calc(100%+40px)] hidden items-center lg:flex">
               <div className="overflow-hidden">
-                <motion.h2 className={`stories-side-title ${titleCls} text-[clamp(80px,9vw,150px)]`} style={{ y: storiesY }}>Stories</motion.h2>
+                <motion.h2 className={`stories-side-title ${titleCls} text-[clamp(80px,9vw,150px)]`} style={{ y: storiesY }}>{stories.mobileTitleBottom}</motion.h2>
               </div>
             </div>
 
             <motion.div className="stories-caption absolute inset-x-0 bottom-0 hidden items-end justify-between gap-10 p-12 text-white lg:flex" style={{ opacity: captionOpacity, y: captionY }}>
               <div>
                 <p className="flex items-center gap-2.5 text-sm font-semibold uppercase tracking-[0.08em]">
-                  <span className="size-2 rounded-full bg-[#ff5059]" />
-                  Behind the work
+                  <span className="size-2 rounded-full bg-[#ff4c4e]" />
+                  {stories.captionEyebrow}
                 </p>
-                <p className={`${titleCls} mt-4 max-w-[760px] text-[clamp(40px,4.4vw,72px)]`}>Every brand has a story worth telling beautifully</p>
+                <p className={`${titleCls} mt-4 max-w-[760px] text-[clamp(40px,4.4vw,72px)]`}>{stories.captionTitle}</p>
               </div>
               <p className="max-w-[300px] text-lg leading-[1.5] text-white/80">
-                Sketches, systems and late-night details — the craft that turns ideas into brands people feel.
+                {stories.captionText}
               </p>
             </motion.div>
           </motion.div>
 
           <div className="overflow-hidden lg:hidden">
-            <h2 className={`${titleCls} text-[clamp(64px,17vw,130px)]`}>Stories</h2>
+            <h2 className={`${titleCls} text-[clamp(64px,17vw,130px)]`}>{stories.mobileTitleBottom}</h2>
           </div>
         </div>
       </div>
@@ -371,6 +341,8 @@ const QUOTE_DURATION = 7;
  * avatar pills and a progress bar (motion port of the GSAP reference).
  */
 function Testimonials() {
+  const content = useSiteContent();
+  const testimonials = content.testimonials.items;
   const rootRef = useRef<HTMLElement>(null);
   const [active, setActive] = useState(0);
   const [inView, setInView] = useState(false);
@@ -384,16 +356,16 @@ function Testimonials() {
     return () => observer.disconnect();
   }, []);
 
-  const t = testimonials[active];
-  const words = t.quote.split(' ');
+  const t = testimonials[active] ?? testimonials[0];
+  const words = (t?.quote ?? '').split(' ');
 
   return (
     <section ref={rootRef} className="testimonials page-width" id="clients" aria-labelledby="clients-title">
-      <h2 className="large-heading low-contrast-heading" id="clients-title">WORDS <span>FROM</span> CLIENTS</h2>
+      <h2 className="large-heading low-contrast-heading" id="clients-title"><SectionHeading heading={content.testimonials.heading} /></h2>
       <div className="mx-auto flex max-w-[1080px] flex-col items-center text-center" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-        <p className="eyebrow">MY CLIENTS&rsquo; REVIEWS</p>
+        <p className="eyebrow">{content.testimonials.eyebrow}</p>
 
-        <span aria-hidden="true" className="mt-10 h-[70px] text-[140px] leading-[0.9] text-[#ff5059] lg:h-[90px] lg:text-[180px]">&ldquo;</span>
+        <span aria-hidden="true" className="mt-10 h-[70px] text-[140px] leading-[0.9] text-[#ff4c4e] lg:h-[90px] lg:text-[180px]">&ldquo;</span>
 
         <div aria-live="polite" className="flex min-h-[210px] w-full items-start justify-center sm:min-h-[180px] lg:min-h-[170px]">
           <motion.blockquote key={active} initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }} className="text-[clamp(24px,3.2vw,44px)] font-medium leading-[1.2] tracking-[-0.025em] text-balance">
@@ -419,7 +391,7 @@ function Testimonials() {
             <button key={person.name} type="button" onClick={() => setActive(i)} aria-label={`Show review from ${person.name}`} aria-pressed={i === active}
               className={cn('flex items-center gap-3 rounded-full p-1.5 transition-all duration-500 md:pr-5', i === active ? 'bg-[#f1f1f1]' : 'opacity-50 hover:opacity-100')}>
               <Image src={person.avatar} alt="" width={44} height={44} loading="lazy" style={{ objectPosition: person.position }}
-                className={cn('size-11 rounded-full object-cover ring-2 transition-all duration-500', i === active ? 'ring-[#ff5059]' : 'ring-transparent grayscale')} />
+                className={cn('size-11 rounded-full object-cover ring-2 transition-all duration-500', i === active ? 'ring-[#ff4c4e]' : 'ring-transparent grayscale')} />
               <span className="hidden text-left text-sm font-semibold leading-tight md:block">
                 {person.name}
                 <span className="block text-xs font-medium text-[#555555]/70">{person.company || person.role}</span>
@@ -429,8 +401,8 @@ function Testimonials() {
         </div>
 
         <div className="mt-8 h-[2px] w-40 overflow-hidden rounded bg-[#1a1a1a]/10">
-          <span key={active} className="quote-progress block h-full w-full origin-left bg-[#ff5059]"
-            style={{ animationPlayState: inView && !paused ? 'running' : 'paused' }}
+          <span key={active} className="quote-progress block h-full w-full origin-left bg-[#ff4c4e]"
+            style={{ animationPlayState: inView && !paused ? 'running' : 'paused', animationDuration: `${QUOTE_DURATION}s` }}
             onAnimationEnd={() => setActive((current) => (current + 1) % testimonials.length)} />
         </div>
       </div>
@@ -438,7 +410,7 @@ function Testimonials() {
   );
 }
 
-export default function Portfolio() {
+export default function Portfolio({ content }: { content: SiteContent }) {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [openService, setOpenService] = useState<number | null>(0);
   const lenisRef = useRef<Lenis | null>(null);
@@ -478,22 +450,26 @@ export default function Portfolio() {
     });
   }
 
+  const featured = content.featured;
+  const activeProject = overlay?.kind === 'project' ? featured.projects[overlay.index] : null;
+  const galleryItem = overlay?.kind === 'gallery' ? content.latest.items[overlay.index] : null;
+
   return (
-    <>
+    <ContentProvider content={content}>
       <a className="skip-link" href="#main">Skip to content</a>
       <header className="site-header page-width" id="home">
-        <button className="cv-button" onClick={downloadResume}>Curriculum Vitae | CV</button>
+        <button className="cv-button" onClick={() => downloadResume(content.experience.items)}>Curriculum Vitae | CV</button>
         <button className="menu-button" onClick={() => setOverlay({ kind: 'menu' })} aria-label="Open navigation menu" aria-haspopup="dialog" aria-expanded={overlay?.kind === 'menu'}><span /><span /><span /></button>
       </header>
 
       <main id="main">
         <section className="hero page-width" aria-label="Seam Rahman, product designer">
           <div className="hero-introduction">
-            <div className="hero-name"><p>Hello there,I&apos;m</p><h2>SEAM<br />RAHMAN</h2></div>
+            <div className="hero-name"><p>{content.hero.greeting}</p><h2>{content.hero.nameLines.map((line, index) => <span key={index}>{line}{index < content.hero.nameLines.length - 1 ? <br /> : null}</span>)}</h2></div>
             <TiltedCard
-              imageSrc={images.portrait}
-              altText="Seam Rahman"
-              captionText="Seam Rahman — Product Designer"
+              imageSrc={content.hero.portrait}
+              altText={content.hero.portraitAlt}
+              captionText={content.hero.portraitCaption}
               containerHeight="var(--portrait-size)"
               containerWidth="var(--portrait-size)"
               imageHeight="var(--portrait-size)"
@@ -505,36 +481,39 @@ export default function Portfolio() {
               imgProps={{ loading: 'eager', fetchPriority: 'high' }}
             />
             <div className="hero-description">
-              <p>I help startups and businesses transform their ideas into intuitive digital products that users love. Through research, UX strategy, and modern interface design, I create experiences that improve engagement &amp; business growth.</p>
-              <CallButton onClick={() => setOverlay({ kind: 'contact', intent: 'project' })}>Contact With Me</CallButton>
+              <p>{content.hero.description}</p>
+              <CallButton onClick={() => setOverlay({ kind: 'contact', intent: 'project' })}>{content.hero.ctaLabel}</CallButton>
             </div>
           </div>
           <h1 className="hero-title">
             <TechText
-              text="PRODUCT DESIGNER"
+              text={content.hero.title}
               fontWeight={550}
               fontSize={114}
               color="#222222"
-              accentColor="#ff505b"
+              accentColor="#ff4c4e"
             />
           </h1>
-          <div className="hero-disciplines"><span>HELPING STARTUPS SCALE</span><span>SAAS EXPERIENCE</span><span>BUILDING DIGITAL PRODUCTS</span></div>
+          <div className="hero-disciplines">{content.hero.disciplines.map((discipline) => <span key={discipline}>{discipline}</span>)}</div>
           <VideoPoster rounded expandOnScroll />
         </section>
 
         <section className="about page-width" id="about" aria-labelledby="about-title">
-          <h2 className="section-title low-contrast-heading" id="about-title">ABOUT <span>ME</span></h2>
+          <h2 className="section-title low-contrast-heading" id="about-title"><SectionHeading heading={content.about.heading} /></h2>
           <div className="about-layout">
-            <div className="about-media"><FlyingPosters items={aboutPosters} planeWidth={290} planeHeight={322} distortion={3} /></div>
+            <div className="about-media"><FlyingPosters items={content.about.posters} planeWidth={content.about.planeWidth} planeHeight={content.about.planeHeight} distortion={3} /></div>
             <div className="about-copy">
               <AboutParagraph />
               <div className="about-stats">
-                <div><strong><CountUp value={2.5} decimals={1} /><span>+</span></strong><p>Years Experience</p></div>
-                <div><strong><CountUp value={65} /><span>+</span></strong><p>Projects delivered</p></div>
-                <div><strong><CountUp value={96} /><span>%</span></strong><p>Returning clients</p></div>
+                {content.about.stats.map((stat) => (
+                  <div key={stat.label}>
+                    <strong><CountUp value={stat.value} decimals={stat.decimals} /><span>{stat.suffix}</span></strong>
+                    <p>{stat.label}</p>
+                  </div>
+                ))}
                 <div className="about-face">
-                  <Image src={images.face} alt="" width={120} height={110} loading="lazy" />
-                  <Image src={images.faceHover} alt="" width={120} height={110} loading="lazy" className="about-face-hover" />
+                  <Image src={content.about.face} alt="" width={120} height={110} loading="lazy" />
+                  <Image src={content.about.faceHover} alt="" width={120} height={110} loading="lazy" className="about-face-hover" />
                 </div>
               </div>
             </div>
@@ -547,18 +526,18 @@ export default function Portfolio() {
 
         <div className="page-width side-rails services-and-stories">
           <section className="services-section" id="services" aria-labelledby="services-title">            <div className="services-heading">
-              <div><p className="eyebrow">MY SERVICES <TurnArrowIcon /></p><h2 className="section-title" id="services-title">SERVICES I OFFER</h2></div>
-              <CallButton onClick={() => setOverlay({ kind: 'contact', intent: 'call' })}>Book a Call</CallButton>
+              <div><p className="eyebrow">{content.services.eyebrow} <TurnArrowIcon /></p><h2 className="section-title" id="services-title"><SectionHeading heading={content.services.heading} /></h2></div>
+              <CallButton onClick={() => setOverlay({ kind: 'contact', intent: 'call' })}>{content.services.callLabel}</CallButton>
             </div>
             <div className="service-list">
-              {services.map((service, index) => {
+              {content.services.items.map((service, index) => {
                 const isOpen = openService === index;
                 return (
-                  <article className={`service-item ${isOpen ? 'is-open' : ''}`} key={service.title}>
+                  <article className={`service-item ${isOpen ? 'is-open' : ''}`} key={`${service.title}-${index}`}>
                     <h3><button className="service-toggle" id={`service-toggle-${index}`} aria-expanded={isOpen} aria-controls={`service-panel-${index}`} onClick={() => setOpenService(isOpen ? null : index)}><span className="service-heading-text"><span className="service-number">0{index + 1}</span>{service.title}</span><span className="service-toggle-icon"><span /><span /></span></button></h3>
                     <div className="service-panel" id={`service-panel-${index}`} role="region" aria-labelledby={`service-toggle-${index}`} inert={!isOpen}>
                       <div className="service-panel-clip"><div className="service-details">
-                        <div className="service-description"><p>{service.description}</p><div className="service-tags">{service.tags.map((tag) => <span key={tag}>{tag}</span>)}</div></div>
+                        <div className="service-description"><p>{service.description}</p><div className="service-tags">{service.tags.map((tag, tagIndex) => <span key={`${tag}-${tagIndex}`}>{tag}</span>)}</div></div>
                         <div className="service-media" aria-hidden="true"><div /><div /></div>
                       </div></div>
                     </div>
@@ -572,10 +551,10 @@ export default function Portfolio() {
         <Stories />
 
         <section className="latest-section" id="latest-works" aria-labelledby="latest-title">
-          <h2 id="latest-title">LATEST <span>DESIGN</span> WORKS</h2>
+          <h2 id="latest-title"><SectionHeading heading={content.latest.heading} /></h2>
           <div className="latest-carousel">
             <CircularCarousel
-              items={carouselItems}
+              items={content.latest.items}
               preset="cylinder"
               intro="rise"
               cardWidth={220}
@@ -590,19 +569,19 @@ export default function Portfolio() {
 
         <div className="page-width side-rails approach-and-experience">
           <section className="approach-section" id="approach" aria-labelledby="approach-title">
-            <h2 className="large-heading low-contrast-heading" id="approach-title">MY PRODUCT <span>APPROACH</span></h2>
-            <div className="approach-steps">{approach.map((step, index) => <article className={`approach-step approach-step-${index + 1}`} key={step.title}><Image className="approach-step-image" src={step.image} alt="" fill sizes="(max-width: 800px) 50vw, 388px" loading="lazy" /><h3>{step.title}</h3><span className="approach-number" aria-hidden="true">0{index + 1}</span><p>{step.description}</p></article>)}</div>
+            <h2 className="large-heading low-contrast-heading" id="approach-title"><SectionHeading heading={content.approach.heading} /></h2>
+            <div className="approach-steps">{content.approach.steps.map((step, index) => <article className={`approach-step approach-step-${index + 1}`} key={`${step.title}-${index}`}><Image className="approach-step-image" src={step.image} alt="" fill sizes="(max-width: 800px) 50vw, 388px" loading="lazy" /><h3>{step.title}</h3><span className="approach-number" aria-hidden="true">0{index + 1}</span><p>{step.description}</p></article>)}</div>
           </section>
-          <h2 className="large-heading low-contrast-heading experience-title" id="experience">WORK <span>EXPERIENCE</span></h2>
+          <h2 className="large-heading low-contrast-heading experience-title" id="experience"><SectionHeading heading={content.experience.heading} /></h2>
         </div>
 
         <section className="experience-list" aria-labelledby="experience">
           <ScrollStack className="experience-stack" useWindowScroll itemDistance={24} baseScale={1} itemScale={0} stackPosition="0%" itemStackDistance={0} zoomOutScale={0.88}>
-            {experience.map((job) => (
+            {content.experience.items.map((job) => (
               <ScrollStackItem key={job.company}>
                 <article className={`experience-item ${job.className}`}>
                   <div className="experience-header page-width"><div><p>{job.dates}</p><h3>{job.role}</h3></div><div className="experience-company"><p>{job.location}</p><h4>{job.company}</h4></div></div>
-                  <div className="experience-detail-surface"><div className="experience-details page-width">{job.responsibilities.map((column, columnIndex) => <ol key={columnIndex}>{column.map((item) => <li key={item}>{item}</li>)}</ol>)}</div></div>
+                  <div className="experience-detail-surface"><div className="experience-details page-width">{job.responsibilities.map((column, columnIndex) => <ol key={columnIndex}>{column.map((item, itemIndex) => <li key={`${item}-${itemIndex}`}>{item}</li>)}</ol>)}</div></div>
                 </article>
               </ScrollStackItem>
             ))}
@@ -617,18 +596,18 @@ export default function Portfolio() {
 
       {overlay?.kind === 'menu' && <RadialMenu onClose={closeOverlay} onNavigate={navigateTo} />}
       {overlay?.kind === 'contact' && <Dialog label={overlay.intent === 'call' ? 'Book a discovery call' : 'Contact Seam Rahman'} className="contact-dialog" onClose={closeOverlay}><ContactForm intent={overlay.intent} /></Dialog>}
-      {overlay?.kind === 'project' && <Dialog label={`Helping hand project ${overlay.index + 1}`} className="project-dialog" onClose={closeOverlay}>
-        <div className="project-dialog-content"><Image className="project-dialog-image" src={images.product} alt="Helping hand orange sunscreen product design" width={1024} height={1024} />
-          <div className="project-dialog-copy"><p className="dialog-eyebrow">PROJECT 0{overlay.index + 1} / {overlay.mode === 'design' ? 'DESIGN PREVIEW' : 'PROJECT PREVIEW'}</p><h2>Helping hand</h2><p>A closer look at the visual direction featured in this portfolio.</p>
-            <dl><div><dt>Focus</dt><dd>Product presentation</dd></div><div><dt>Discipline</dt><dd>Visual design &amp; art direction</dd></div><div><dt>Palette</dt><dd><span className="palette-dot palette-orange" /><span className="palette-dot palette-peach" /><span className="palette-dot palette-black" /></dd></div></dl>
+      {overlay?.kind === 'project' && activeProject && <Dialog label={`${activeProject.title} project ${overlay.index + 1}`} className="project-dialog" onClose={closeOverlay}>
+        <div className="project-dialog-content"><Image className="project-dialog-image" src={activeProject.image} alt={activeProject.title} width={1024} height={1024} />
+          <div className="project-dialog-copy"><p className="dialog-eyebrow">{featured.dialogEyebrowPrefix} 0{overlay.index + 1} / {overlay.mode === 'design' ? 'DESIGN PREVIEW' : 'PROJECT PREVIEW'}</p><h2>{activeProject.title}</h2><p>{activeProject.dialogIntro}</p>
+            <dl><div><dt>Focus</dt><dd>{activeProject.focus}</dd></div><div><dt>Discipline</dt><dd>{activeProject.discipline}</dd></div><div><dt>Palette</dt><dd><span className="palette-dot palette-orange" /><span className="palette-dot palette-peach" /><span className="palette-dot palette-black" /></dd></div></dl>
             {overlay.mode === 'design' && <p className="preview-note">The original Figma file was not included with the reference. You can explore the design artwork here.</p>}
-            <a className="outline-button" href={images.product} download="helping-hand-design.jpg">Download artwork <ArrowIcon /></a><a className="text-button portfolio-link" href={portfolioUrl} target="_blank" rel="noreferrer">Explore the portfolio on Behance <ArrowIcon /></a>
+            <a className="outline-button" href={activeProject.image} download={`${activeProject.title.toLowerCase().replace(/\s+/g, '-')}-design.jpg`}>{featured.dialogDownloadLabel} <ArrowIcon /></a><a className="text-button portfolio-link" href={featured.behanceUrl} target="_blank" rel="noreferrer">{featured.behanceLabel} <ArrowIcon /></a>
           </div>
         </div>
       </Dialog>}
-      {overlay?.kind === 'gallery' && <Dialog label="Story Creating App design" className="gallery-dialog" onClose={closeOverlay}>
-        <div className="gallery-dialog-content"><Image src={images.app} alt="Story Creating App mobile design presentation" width={1024} height={1024} /><div className="gallery-dialog-footer"><div><p className="dialog-eyebrow">LATEST DESIGN WORK / 0{overlay.index + 1}</p><h2>Story Creating App</h2></div><a className="outline-button" href={images.app} download="story-creating-app.jpg">Download design <ArrowIcon /></a></div></div>
+      {overlay?.kind === 'gallery' && galleryItem && <Dialog label={`${galleryItem.title} design`} className="gallery-dialog" onClose={closeOverlay}>
+        <div className="gallery-dialog-content"><Image src={galleryItem.src} alt={galleryItem.alt} width={1024} height={1024} /><div className="gallery-dialog-footer"><div><p className="dialog-eyebrow">LATEST DESIGN WORK / 0{overlay.index + 1}</p><h2>{galleryItem.title}</h2></div><a className="outline-button" href={galleryItem.src} download={`${galleryItem.title.toLowerCase().replace(/\s+/g, '-')}.jpg`}>Download design <ArrowIcon /></a></div></div>
       </Dialog>}
-    </>
+    </ContentProvider>
   );
 }

@@ -1,6 +1,6 @@
-import { experience } from '../data/portfolio';
+import type { ExperienceItem } from '../data/content-types';
 
-export function downloadResume() {
+export function downloadResume(experience: ExperienceItem[]) {
   const escapePdf = (text: string) => text.replace(/([\\()])/g, '\\$1');
   const commands: string[] = [];
   let y = 792;

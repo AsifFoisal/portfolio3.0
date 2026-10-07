@@ -1,0 +1,527 @@
+{
+  "meta": {
+    "title": "Seam Rahman | Product Designer",
+    "description": "Seam Rahman, UI/UX and Product Designer. Helping startups scale through thoughtful digital products, mobile apps, websites, and SaaS experiences."
+  },
+  "hero": {
+    "greeting": "Hello there,I'm",
+    "nameLines": [
+      "SEAM",
+      "RAHMAN"
+    ],
+    "portrait": "/images/designer-portrait.jpg",
+    "portraitAlt": "Seam Rahman",
+    "portraitCaption": "Seam Rahman — Product Designer",
+    "description": "I help startups and businesses transform their ideas into intuitive digital products that users love. Through research, UX strategy, and modern interface design, I create experiences that improve engagement & business growth.",
+    "ctaLabel": "Contact With Me",
+    "title": "PRODUCT DESIGNER",
+    "disciplines": [
+      "HELPING STARTUPS SCALE",
+      "SAAS EXPERIENCE",
+      "BUILDING DIGITAL PRODUCTS"
+    ],
+    "reel": {
+      "poster": "/images/visual-story.jpg",
+      "posterAlt": "A woman working on her laptop in a bright, sunlit kitchen",
+      "videoUrl": "https://videos.pexels.com/video-files/7423593/7423593-hd_1280_720_30fps.mp4",
+      "videoPageUrl": "https://www.pexels.com/video/woman-using-a-laptop-7423593/",
+      "playLabel": "PLAY",
+      "pauseLabel": "PAUSE"
+    }
+  },
+  "about": {
+    "heading": {
+      "text": "ABOUT",
+      "accent": "ME"
+    },
+    "segments": [
+      {
+        "text": "I'm a UI/UX & Product Designer with 2.5+ years of experience, currently working with a "
+      },
+      {
+        "text": "multinational company",
+        "accent": true
+      },
+      {
+        "text": ", focused on solving complex product problems through simple, intuitive, and user-centered design. I've worked across multiple digital products, including "
+      },
+      {
+        "text": "Crypto currency",
+        "accent": true
+      },
+      {
+        "text": " and "
+      },
+      {
+        "text": "Perfect Panel",
+        "accent": true
+      },
+      {
+        "text": ", combining my BBA background, "
+      },
+      {
+        "text": "marketing & sales knowledge",
+        "accent": true
+      },
+      {
+        "text": " and product thinking to help startups and digital businesses build better digital experiences."
+      }
+    ],
+    "posters": [
+      "/images/orange-sunscreen.jpg",
+      "/images/story-app.jpg",
+      "/images/designer-portrait.jpg",
+      "/images/visual-story.jpg"
+    ],
+    "planeWidth": 290,
+    "planeHeight": 322,
+    "stats": [
+      {
+        "value": 2.5,
+        "decimals": 1,
+        "suffix": "+",
+        "label": "Years Experience"
+      },
+      {
+        "value": 65,
+        "decimals": 0,
+        "suffix": "+",
+        "label": "Projects delivered"
+      },
+      {
+        "value": 96,
+        "decimals": 0,
+        "suffix": "%",
+        "label": "Returning clients"
+      }
+    ],
+    "face": "/images/face.png",
+    "faceHover": "/images/facehover.jpg"
+  },
+  "featured": {
+    "eyebrow": "PROJECT",
+    "heading": {
+      "text": "FEATURED WORKS",
+      "accent": ""
+    },
+    "viewAllLabel": "VIEW ALL PROJECT",
+    "liveLinkLabel": "Live Link",
+    "figmaLinkLabel": "Figma Link",
+    "dialogEyebrowPrefix": "PROJECT",
+    "dialogDownloadLabel": "Download artwork",
+    "behanceUrl": "https://www.behance.net/seamrahman3",
+    "behanceLabel": "Explore the portfolio on Behance",
+    "projects": [
+      {
+        "title": "Helping hand",
+        "description": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text...",
+        "image": "/images/orange-sunscreen.jpg",
+        "liveUrl": "",
+        "figmaUrl": "",
+        "dialogIntro": "A closer look at the visual direction featured in this portfolio.",
+        "focus": "Product presentation",
+        "discipline": "Visual design & art direction"
+      },
+      {
+        "title": "Helping hand",
+        "description": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text...",
+        "image": "/images/orange-sunscreen.jpg",
+        "liveUrl": "",
+        "figmaUrl": "",
+        "dialogIntro": "A closer look at the visual direction featured in this portfolio.",
+        "focus": "Product presentation",
+        "discipline": "Visual design & art direction"
+      },
+      {
+        "title": "Helping hand",
+        "description": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text...",
+        "image": "/images/orange-sunscreen.jpg",
+        "liveUrl": "",
+        "figmaUrl": "",
+        "dialogIntro": "A closer look at the visual direction featured in this portfolio.",
+        "focus": "Product presentation",
+        "discipline": "Visual design & art direction"
+      },
+      {
+        "title": "Helping hand",
+        "description": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text...",
+        "image": "/images/orange-sunscreen.jpg",
+        "liveUrl": "",
+        "figmaUrl": "",
+        "dialogIntro": "A closer look at the visual direction featured in this portfolio.",
+        "focus": "Product presentation",
+        "discipline": "Visual design & art direction"
+      },
+      {
+        "title": "Helping hand",
+        "description": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text...",
+        "image": "/images/orange-sunscreen.jpg",
+        "liveUrl": "",
+        "figmaUrl": "",
+        "dialogIntro": "A closer look at the visual direction featured in this portfolio.",
+        "focus": "Product presentation",
+        "discipline": "Visual design & art direction"
+      }
+    ]
+  },
+  "services": {
+    "eyebrow": "MY SERVICES",
+    "heading": {
+      "text": "SERVICES I OFFER",
+      "accent": ""
+    },
+    "callLabel": "Book a Call",
+    "items": [
+      {
+        "title": "Mobile App Design & Development",
+        "description": "Creating intuitive, high-performing mobile experiences that turn ideas into user-friendly iOS and Android products.",
+        "tags": [
+          "UX Design",
+          "Mobile UI",
+          "App Development"
+        ]
+      },
+      {
+        "title": "Website Design & Development",
+        "description": "Designing and building thoughtful, responsive websites that tell your story and turn visitors into customers.",
+        "tags": [
+          "Web Design",
+          "Responsive UI",
+          "Development"
+        ]
+      },
+      {
+        "title": "SaaS Product UI/UX Design",
+        "description": "Making complex software feel simple with research-led experiences that help your customers get more done.",
+        "tags": [
+          "Product Strategy",
+          "SaaS UI",
+          "Design Systems"
+        ]
+      },
+      {
+        "title": "Web App & Dashboard Design",
+        "description": "Turning complex workflows and data into clear, useful interfaces built around the people who use them.",
+        "tags": [
+          "Web Apps",
+          "Dashboards",
+          "Data Visualization"
+        ]
+      },
+      {
+        "title": "MVP & Startup Product Design",
+        "description": "Taking your first idea to a focused, testable product with the right features and a strong foundation for growth.",
+        "tags": [
+          "Product Discovery",
+          "Prototyping",
+          "MVP Design"
+        ]
+      }
+    ]
+  },
+  "stories": {
+    "mobileTitleTop": "Visual",
+    "mobileTitleBottom": "Stories",
+    "captionEyebrow": "Behind the work",
+    "captionTitle": "Every brand has a story worth telling beautifully",
+    "captionText": "Sketches, systems and late-night details — the craft that turns ideas into brands people feel.",
+    "videoUrl": "https://videos.pexels.com/video-files/7423593/7423593-hd_1280_720_30fps.mp4",
+    "poster": "/images/visual-story.jpg"
+  },
+  "latest": {
+    "heading": {
+      "text": "LATEST",
+      "accent": "DESIGN",
+      "suffix": "WORKS"
+    },
+    "items": [
+      {
+        "src": "/images/story-app.jpg",
+        "alt": "Story Creating App with colorful mobile interfaces and a friendly 3D wizard",
+        "title": "Story Creating App",
+        "subtitle": "Mobile design"
+      },
+      {
+        "src": "/images/orange-sunscreen.jpg",
+        "alt": "Two orange sunscreen bottles with palm-leaf shadows on a peach background",
+        "title": "Helping Hand",
+        "subtitle": "Product design"
+      },
+      {
+        "src": "/images/designer-portrait.jpg",
+        "alt": "Portrait of Seam Rahman",
+        "title": "Seam Rahman",
+        "subtitle": "Product designer"
+      },
+      {
+        "src": "/images/visual-story.jpg",
+        "alt": "A woman working on her laptop in a bright, sunlit kitchen",
+        "title": "Visual Stories",
+        "subtitle": "Film"
+      },
+      {
+        "src": "/images/cap.jpg",
+        "alt": "A graduation cap resting on a plain surface",
+        "title": "Milestones",
+        "subtitle": "Journey"
+      },
+      {
+        "src": "https://picsum.photos/seed/latest-1/900/900",
+        "alt": "Dummy design 1",
+        "title": "Dummy 1",
+        "subtitle": "Placeholder"
+      },
+      {
+        "src": "https://picsum.photos/seed/latest-2/900/900",
+        "alt": "Dummy design 2",
+        "title": "Dummy 2",
+        "subtitle": "Placeholder"
+      },
+      {
+        "src": "https://picsum.photos/seed/latest-3/900/900",
+        "alt": "Dummy design 3",
+        "title": "Dummy 3",
+        "subtitle": "Placeholder"
+      },
+      {
+        "src": "https://picsum.photos/seed/latest-4/900/900",
+        "alt": "Dummy design 4",
+        "title": "Dummy 4",
+        "subtitle": "Placeholder"
+      },
+      {
+        "src": "https://picsum.photos/seed/latest-5/900/900",
+        "alt": "Dummy design 5",
+        "title": "Dummy 5",
+        "subtitle": "Placeholder"
+      },
+      {
+        "src": "https://picsum.photos/seed/latest-6/900/900",
+        "alt": "Dummy design 6",
+        "title": "Dummy 6",
+        "subtitle": "Placeholder"
+      },
+      {
+        "src": "https://picsum.photos/seed/latest-7/900/900",
+        "alt": "Dummy design 7",
+        "title": "Dummy 7",
+        "subtitle": "Placeholder"
+      },
+      {
+        "src": "https://picsum.photos/seed/latest-8/900/900",
+        "alt": "Dummy design 8",
+        "title": "Dummy 8",
+        "subtitle": "Placeholder"
+      },
+      {
+        "src": "https://picsum.photos/seed/latest-9/900/900",
+        "alt": "Dummy design 9",
+        "title": "Dummy 9",
+        "subtitle": "Placeholder"
+      },
+      {
+        "src": "https://picsum.photos/seed/latest-10/900/900",
+        "alt": "Dummy design 10",
+        "title": "Dummy 10",
+        "subtitle": "Placeholder"
+      }
+    ]
+  },
+  "approach": {
+    "heading": {
+      "text": "MY PRODUCT",
+      "accent": "APPROACH"
+    },
+    "steps": [
+      {
+        "title": "DISCOVER",
+        "image": "/images/discover.png",
+        "description": "Understand the business, users, goals, and core product problems."
+      },
+      {
+        "title": "DEFINE & DESIGN",
+        "image": "/images/define.png",
+        "description": "Shape user flows, wireframes, and high fidelity UI around clear product goals."
+      },
+      {
+        "title": "VALIDATE & REFINE",
+        "image": "/images/validate.png",
+        "description": "Prototype, test key interactions, gather feedback, and refine the experience."
+      },
+      {
+        "title": "DEVELOPER HANDOFF",
+        "image": "/images/developer.png",
+        "description": "Prepare design systems, responsive states, components, specs, and assets for smooth development."
+      }
+    ]
+  },
+  "experience": {
+    "heading": {
+      "text": "WORK",
+      "accent": "EXPERIENCE"
+    },
+    "items": [
+      {
+        "company": "Inforisen UG",
+        "role": "Product UX/UI Designer (Full time)",
+        "dates": "March 2025 - Present",
+        "location": "Aftabnagar,Dhaka Bangladesh",
+        "className": "experience-inforisen",
+        "responsibilities": [
+          [
+            "Designed scalable UI/UX for web and mobile products.",
+            "Worked on cryptocurrency platforms and dashboards."
+          ],
+          [
+            "Designed intuitive SMM panel interfaces and workflows.",
+            "Contributed to AI powered digital products."
+          ],
+          [
+            "Created user flows, wireframes, prototypes, and high fidelity UI.",
+            "Collaborated with developers to deliver consistent, production ready designs."
+          ]
+        ]
+      },
+      {
+        "company": "Softvence Agency",
+        "role": "Jr. UX/UI Designer (Full time)",
+        "dates": "July 2025 - March 2026",
+        "location": "Mohakhali,Dhaka Bangladesh",
+        "className": "experience-softvence",
+        "responsibilities": [
+          [
+            "Designed UI/UX for B2B web and mobile products.",
+            "Created clean, user friendly interfaces for complex workflows."
+          ],
+          [
+            "Conducted UX research, user flows, and wireframing.",
+            "Designed responsive screens and high fidelity prototypes."
+          ],
+          [
+            "Improved usability, consistency, and overall product experience.",
+            "Collaborated with developers and product teams from design to delivery."
+          ]
+        ]
+      },
+      {
+        "company": "Captain UIUX",
+        "role": "UX/UI Designer (Remote)",
+        "dates": "June 2024 - July 2025",
+        "location": "Dhanmondi,Dhaka Bangladesh",
+        "className": "experience-captain",
+        "responsibilities": [
+          [
+            "Transformed business requirements into clear product experiences.",
+            "Built engaging landing pages and conversion focused interfaces."
+          ],
+          [
+            "Developed reusable UI components and design systems.",
+            "Simplified complex journeys through UX flows and interaction design."
+          ],
+          [
+            "Created responsive experiences across desktop, tablet, and mobile.",
+            "Presented design solutions and worked directly with clients and stakeholders."
+          ]
+        ]
+      },
+      {
+        "company": "Scapes Plan",
+        "role": "UX/UI Designer ( Contractual)",
+        "dates": "April 2024 - June 2024",
+        "location": "Chattogram,Bangladesh",
+        "className": "experience-scapes",
+        "responsibilities": [
+          [
+            "Designed seamless university application journeys for international students.",
+            "Simplified the process of course and university selection."
+          ],
+          [
+            "Created intuitive flows for application and document management.",
+            "Designed clear visa processing and application tracking experiences."
+          ],
+          [
+            "Built responsive dashboards for students and application teams.",
+            "Improved the overall student journey from application to visa processing."
+          ]
+        ]
+      }
+    ]
+  },
+  "testimonials": {
+    "heading": {
+      "text": "WORDS",
+      "accent": "FROM",
+      "suffix": "CLIENTS"
+    },
+    "eyebrow": "MY CLIENTS’ REVIEWS",
+    "items": [
+      {
+        "quote": "Seam turned a rough idea into a product our users genuinely enjoy. The attention to detail in every screen made the launch feel effortless.",
+        "name": "Swadhin Biswas",
+        "role": "Full stack developer",
+        "company": "",
+        "avatar": "/images/designer-portrait.jpg",
+        "position": "38% 40%"
+      },
+      {
+        "quote": "Working with Seam felt like adding a product strategist to the team, not just a designer. Clear thinking, fast iterations, beautiful results.",
+        "name": "Al Amin Mun",
+        "role": "Full stack developer",
+        "company": "",
+        "avatar": "/images/designer-portrait.jpg",
+        "position": "50% 45%"
+      },
+      {
+        "quote": "Every deliverable arrived polished and on time. Seam understands business goals as well as pixels — a rare combination.",
+        "name": "Naimur Rahman",
+        "role": "Founder",
+        "company": "Scapes Plan",
+        "avatar": "/images/designer-portrait.jpg",
+        "position": "62% 40%"
+      }
+    ]
+  },
+  "footer": {
+    "backgroundImage": "/images/footer.png",
+    "name": "Seam RaHman",
+    "blurb": "From early ideas to growing products, I turn complex business problems into simple digital experiences.",
+    "marqueeText": "Let's work together",
+    "marqueeSymbol": "✦",
+    "cursorLabel": "Let's Talk",
+    "sayHelloLabel": "Say Hello",
+    "whatsappUrl": "https://wa.me/",
+    "email": "forwork5723@gmail.com",
+    "servicesHeading": "All Services",
+    "askAiLabel": "Ask AI about Seam RaHman"
+  },
+  "navigation": [
+    {
+      "label": "Home",
+      "href": "#home"
+    },
+    {
+      "label": "About me",
+      "href": "#about"
+    },
+    {
+      "label": "Featured works",
+      "href": "#projects"
+    },
+    {
+      "label": "Services",
+      "href": "#services"
+    },
+    {
+      "label": "Visual stories",
+      "href": "#stories"
+    },
+    {
+      "label": "My approach",
+      "href": "#approach"
+    },
+    {
+      "label": "Experience",
+      "href": "#experience"
+    }
+  ]
+}

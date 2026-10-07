@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react';
-import { portfolioUrl, services } from '../data/portfolio';
+import { useSiteContent } from '../data/content-context';
 import { ArrowIcon } from './Icons';
 
 type ContactFormProps = { intent: 'project' | 'call' };
 
 export default function ContactForm({ intent }: ContactFormProps) {
+  const content = useSiteContent();
   const [brief, setBrief] = useState('');
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
@@ -45,7 +46,7 @@ export default function ContactForm({ intent }: ContactFormProps) {
         <textarea aria-label="Your prepared message" className="brief-preview" readOnly value={brief} onFocus={(event) => event.currentTarget.select()} />
         <div className="dialog-actions">
           <button className="solid-button" onClick={copyBrief}>{copied ? 'Copied to clipboard' : 'Copy brief'}</button>
-          <a className="outline-button" href={portfolioUrl} target="_blank" rel="noreferrer">Continue on Behance <ArrowIcon /></a>
+          <a className="outline-button" href={content.featured.behanceUrl} target="_blank" rel="noreferrer">Continue on Behance <ArrowIcon /></a>
         </div>
         <p className="form-status" role="status">{copyError ? 'Select the message above and copy it manually.' : copied ? 'Your message is copied and ready to send.' : 'Nothing has been sent yet.'}</p>
         <button className="text-button" onClick={() => { setBrief(''); setCopied(false); setCopyError(false); }}>Start a new enquiry</button>
@@ -66,7 +67,7 @@ export default function ContactForm({ intent }: ContactFormProps) {
         <label>What can I help with?
           <select name="service" defaultValue="Let's discuss the possibilities">
             <option>Let&apos;s discuss the possibilities</option>
-            {services.map((service) => <option key={service.title}>{service.title}</option>)}
+            {content.services.items.map((service) => <option key={service.title}>{service.title}</option>)}
           </select>
         </label>
         {isCall && (

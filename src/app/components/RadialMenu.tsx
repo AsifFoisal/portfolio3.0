@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { navigation } from '../data/portfolio';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSiteContent } from '../data/content-context';
 import './RadialMenu.css';
 
 // Ring geometry from the Radial Concentric Navigation design, inner -> outer.
@@ -15,13 +15,8 @@ const RING_STYLES = [
   { radius: 243, fill: '#ffb9bd', fontSize: 12 },
   { radius: 286, fill: '#ff969d', fontSize: 12 },
   { radius: 330, fill: '#ff757f', fontSize: 12.5 },
-  { radius: 375, fill: '#ff505b', fontSize: 13 },
+  { radius: 375, fill: '#ff4c4e', fontSize: 13 },
 ].map((ring) => ({ ...ring, offset: '12.5%' }));
-
-const RINGS = navigation.map((link, index) => {
-  const style = RING_STYLES[index] ?? RING_STYLES[RING_STYLES.length - 1];
-  return { ...link, ...style, pathRadius: style.radius - 22 };
-});
 
 // The hub circle sits at (520, 160) inside the 680x680 canvas.
 const HUB_X = 520;
@@ -37,6 +32,12 @@ type RadialMenuProps = {
 };
 
 export default function RadialMenu({ onClose, onNavigate }: RadialMenuProps) {
+  const content = useSiteContent();
+  const rings = useMemo(() => content.navigation.map((link, index) => {
+    const style = RING_STYLES[index] ?? RING_STYLES[RING_STYLES.length - 1];
+    return { ...link, ...style, pathRadius: style.radius - 22 };
+  }), [content.navigation]);
+
   const [open, setOpen] = useState(false);
   const closingRef = useRef(false);
 
@@ -77,12 +78,12 @@ export default function RadialMenu({ onClose, onNavigate }: RadialMenuProps) {
           <filter id="ring-shadow" x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow dx="-2" dy="4" stdDeviation="4" floodColor="#000000" floodOpacity="0.25" />
           </filter>
-          {RINGS.map((ring, index) => (
+          {rings.map((ring, index) => (
             <path key={ring.href} id={`radial-path-${index}`} d={arcPath(ring.pathRadius)} />
           ))}
         </defs>
 
-        {[...RINGS].reverse().map((ring, reverseIndex) => (
+        {[...rings].reverse().map((ring, reverseIndex) => (
           <g
             key={ring.href}
             className="ring-group"
@@ -93,7 +94,7 @@ export default function RadialMenu({ onClose, onNavigate }: RadialMenuProps) {
           >
             <circle cx={HUB_X} cy={HUB_Y} r={ring.radius} fill={ring.fill} filter="url(#ring-shadow)" className="ring-path" />
             <text className="ring-text" fontSize={ring.fontSize}>
-              <textPath href={`#radial-path-${RINGS.length - 1 - reverseIndex}`} startOffset={ring.offset} textAnchor="middle">
+              <textPath href={`#radial-path-${rings.length - 1 - reverseIndex}`} startOffset={ring.offset} textAnchor="middle">
                 {ring.label.toUpperCase()}
               </textPath>
             </text>

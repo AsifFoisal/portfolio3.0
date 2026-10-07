@@ -3,12 +3,8 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import Image from 'next/image';
 import { motion, useAnimationFrame, useMotionValue, useSpring } from 'motion/react';
-import { images, services } from '../data/portfolio';
+import { useSiteContent } from '../data/content-context';
 import { InstagramIcon, WhatsAppIcon } from './Icons';
-
-const HERO_IMAGE = '/images/footer.png';
-const EMAIL = 'forwork5723@gmail.com';
-const WHATSAPP_URL = 'https://wa.me/';
 
 function IconBolt() {
   return (
@@ -48,10 +44,11 @@ function IconCopy() {
 }
 
 function AvatarIllustration() {
+  const content = useSiteContent();
   return (
     <div className="footer-avatar">
-      <Image src={images.face} alt="" width={56} height={56} loading="lazy" />
-      <Image src={images.faceHover} alt="" width={56} height={56} loading="lazy" className="footer-avatar-hover" />
+      <Image src={content.about.face} alt="" width={56} height={56} loading="lazy" />
+      <Image src={content.about.faceHover} alt="" width={56} height={56} loading="lazy" className="footer-avatar-hover" />
     </div>
   );
 }
@@ -59,7 +56,7 @@ function AvatarIllustration() {
 /** Infinite "Let's work together" marquee — runs on its own, reverses with the
  * scroll direction, links to WhatsApp, and shows a "Let's Talk" cursor bubble
  * on hover. Motion port of the GSAP reference. */
-function FooterMarquee({ whatsappUrl }: { whatsappUrl: string }) {
+function FooterMarquee({ whatsappUrl, marqueeText, marqueeSymbol, cursorLabel }: { whatsappUrl: string; marqueeText: string; marqueeSymbol: string; cursorLabel: string }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const direction = useRef(-1);
@@ -118,10 +115,10 @@ function FooterMarquee({ whatsappUrl }: { whatsappUrl: string }) {
           <div key={k} aria-hidden={k === 1 || undefined} className="flex shrink-0 items-center">
             {Array.from({ length: 3 }).map((_, j) => (
               <span key={j} className="flex items-center">
-                <span className="whitespace-nowrap px-6 text-[clamp(40px,6vw,90px)] font-extrabold uppercase leading-none tracking-wider transition-colors duration-500 group-hover:text-[#ff5059] lg:px-10">
-                  Let&rsquo;s work together
+                <span className="whitespace-nowrap px-6 text-[clamp(40px,6vw,90px)] font-extrabold uppercase leading-none tracking-wider transition-colors duration-500 group-hover:text-[#ff4c4e] lg:px-10">
+                  {marqueeText}
                 </span>
-                <span className="shrink-0 text-[clamp(22px,3vw,44px)] leading-none text-[#ff5059] transition-all duration-1000 group-hover:rotate-180 group-hover:text-[#1a1a1a]">✦</span>
+                <span className="shrink-0 text-[clamp(22px,3vw,44px)] leading-none text-[#ff4c4e] transition-all duration-1000 group-hover:rotate-180 group-hover:text-[#1a1a1a]">{marqueeSymbol}</span>
               </span>
             ))}
           </div>
@@ -129,7 +126,7 @@ function FooterMarquee({ whatsappUrl }: { whatsappUrl: string }) {
       </motion.div>
       {hovering && (
         <motion.div className="pointer-events-none absolute left-0 top-0 z-10" style={{ x: cursorSpringX, y: cursorSpringY }}>
-          <span className="grid size-24 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[#ff5059] text-sm font-semibold uppercase text-white">Let&rsquo;s Talk</span>
+          <span className="grid size-24 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[#ff4c4e] text-sm font-semibold uppercase text-white">{cursorLabel}</span>
         </motion.div>
       )}
     </a>
@@ -137,6 +134,8 @@ function FooterMarquee({ whatsappUrl }: { whatsappUrl: string }) {
 }
 
 export default function SiteFooter() {
+  const content = useSiteContent();
+  const footer = content.footer;
   const [toast, setToast] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -148,11 +147,11 @@ export default function SiteFooter() {
 
   async function copyEmail() {
     try {
-      await navigator.clipboard.writeText(EMAIL);
+      await navigator.clipboard.writeText(footer.email);
       showToast('Email copied to clipboard!');
     } catch {
       const input = document.createElement('input');
-      input.value = EMAIL;
+      input.value = footer.email;
       document.body.appendChild(input);
       input.select();
       input.setSelectionRange(0, 99999);
@@ -160,7 +159,7 @@ export default function SiteFooter() {
         document.execCommand('copy');
         showToast('Email copied to clipboard!');
       } catch {
-        showToast(EMAIL);
+        showToast(footer.email);
       }
       input.remove();
     }
@@ -170,7 +169,7 @@ export default function SiteFooter() {
     <footer className="site-footer">
       <div
         className="relative w-full overflow-hidden bg-cover bg-center min-h-265 pt-44 pb-6 sm:pb-10 sm:pt-64 md:pt-80 lg:pt-96"
-        style={{ backgroundImage: `url('${HERO_IMAGE}')` }}
+        style={{ backgroundImage: `url('${footer.backgroundImage}')` }}
       >
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
 
@@ -182,9 +181,9 @@ export default function SiteFooter() {
             <div className=" grid grid-cols-1 gap-8 border-b border-gray-100/80 pb-10 md:grid-cols-12 md:gap-6 lg:gap-10 lg:ml-35">
               <div className="flex flex-col justify-between space-y-6 md:col-span-5 lg:col-span-4">
                 <div>
-                  <h2 className="mb-2 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Seam RaHman</h2>
+                  <h2 className="mb-2 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">{footer.name}</h2>
                   <p className="text-sm leading-relaxed font-normal text-gray-500">
-                    From early ideas to growing products, I turn complex business problems into simple digital experiences.
+                    {footer.blurb}
                   </p>
                 </div>
 
@@ -194,12 +193,12 @@ export default function SiteFooter() {
                   </div>
 
                   <a
-                    href={WHATSAPP_URL}
+                    href={footer.whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn-black inline-flex cursor-pointer items-center space-x-2.5 rounded-full px-5 py-2.5 text-sm font-medium"
                   >
-                    <span>Say Hello</span>
+                    <span>{footer.sayHelloLabel}</span>
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white">
                       <WhatsAppIcon className="h-3 w-3" />
                     </span>
@@ -211,7 +210,7 @@ export default function SiteFooter() {
                     onClick={copyEmail}
                     className="group flex items-center space-x-1.5 text-sm font-medium text-gray-700 transition hover:text-gray-900 focus:outline-none"
                   >
-                    <span>{EMAIL}</span>
+                    <span>{footer.email}</span>
                     <span className="text-xs text-gray-400 opacity-0 transition-opacity group-hover:opacity-100">
                       <IconCopy />
                     </span>
@@ -220,9 +219,9 @@ export default function SiteFooter() {
               </div>
 
               <div className="flex flex-col justify-start md:col-span-4 lg:col-span-4">
-                <h3 className="mb-4 text-xl font-bold text-center text-gray-900">All Services</h3>
+                <h3 className="mb-4 text-xl font-bold text-center text-gray-900">{footer.servicesHeading}</h3>
                 <div className="mx-auto flex max-w-xs flex-col space-y-2">
-                  {services.map((service) => (
+                  {content.services.items.map((service) => (
                     <a key={service.title} href="#services" className="service-badge rounded-lg px-4 py-2.5 text-center text-xs font-medium text-gray-800">
                       {service.title}
                     </a>
@@ -232,7 +231,7 @@ export default function SiteFooter() {
 
               <div className="flex flex-col items-center justify-between space-y-6 text-center md:col-span-3 lg:col-span-4">
                 <div className="space-y-3">
-                  <p className="text-xs font-semibold tracking-wide text-gray-700">Ask AI about Seam RaHman</p>
+                  <p className="text-xs font-semibold tracking-wide text-gray-700">{footer.askAiLabel}</p>
                   <div className="flex items-center justify-center space-x-2.5">
                     <button className="icon-circle" title="Ask ChatGPT"><IconBolt /></button>
                     <button className="icon-circle" title="Ask Claude"><IconRotate /></button>
@@ -257,7 +256,7 @@ export default function SiteFooter() {
               </div>
             </div>
 
-            <FooterMarquee whatsappUrl={WHATSAPP_URL} />
+            <FooterMarquee whatsappUrl={footer.whatsappUrl} marqueeText={footer.marqueeText} marqueeSymbol={footer.marqueeSymbol} cursorLabel={footer.cursorLabel} />
           </div>
         </div>
       </div>

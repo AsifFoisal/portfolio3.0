@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Bai_Jamjuree, Inter } from "next/font/google";
 import "./globals.css";
+import { getContent } from "./data/content-store";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -8,28 +9,31 @@ const inter = Inter({
   display: "swap",
 });
 
-const jakarta = Plus_Jakarta_Sans({
+const jamjuree = Bai_Jamjuree({
   subsets: ["latin"],
-  variable: "--font-jakarta",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-jamjuree",
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "Seam Rahman | Product Designer",
-  description:
-    "Seam Rahman, UI/UX and Product Designer. Helping startups scale through thoughtful digital products, mobile apps, websites, and SaaS experiences.",
-  icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const content = await getContent();
+  return {
+    title: content.meta.title,
+    description: content.meta.description,
+    icons: {
+      icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#ffffff",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} ${jakarta.variable}`}>
+    <html lang="en" className={`${inter.variable} ${jamjuree.variable}`}>
       <body>{children}</body>
     </html>
   );

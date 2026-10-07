@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# auth database
+/portfolio.db
+/portfolio.db-journal
+
+# admin uploads
+/public/uploads
