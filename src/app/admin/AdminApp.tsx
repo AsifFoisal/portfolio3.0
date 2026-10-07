@@ -153,7 +153,7 @@ function JsonField({ label, value, onChange }: { label: string; value: JsonValue
   return null;
 }
 
-function JsonArray({ label, value, onChange }: { label: string; value: JsonValue[]; onChange: (value: JsonValue[]) => void }) {
+function JsonArray({ label, value, onChange, section }: { label: string; value: JsonValue[]; onChange: (value: JsonValue[]) => void; section: string }) {
   const template = value.length > 0 ? emptyLike(value[0]) : '';
 
   function replaceAt(index: number, item: JsonValue) {
@@ -181,7 +181,7 @@ function JsonArray({ label, value, onChange }: { label: string; value: JsonValue
               <button type="button" className="admin-danger" onClick={() => onChange(value.filter((_, i) => i !== index))} title="Remove">✕</button>
             </div>
           </div>
-          <JsonNode label={`Item ${index + 1}`} value={item} onChange={(itemValue) => replaceAt(index, itemValue)} />
+          <JsonNode label={`Item ${index + 1}`} value={item} onChange={(itemValue) => replaceAt(index, itemValue)} section={section} />
         </div>
       ))}
       <button type="button" className="admin-outline-button" onClick={() => onChange([...value, template])}>
@@ -207,7 +207,7 @@ function JsonNode({ label, value, onChange, section }: { label: string; value: J
     return <JsonObject label={label} value={value} onChange={onChange} section={section} />;
   }
   if (Array.isArray(value)) {
-    return <JsonArray label={label} value={value} onChange={onChange} />;
+    return <JsonArray label={label} value={value} onChange={onChange} section={section} />;
   }
   return <JsonField label={label} value={value} onChange={onChange} />;
 }
