@@ -15,13 +15,34 @@ This project has been migrated from **`better-sqlite3` / `@libsql` (Turso)** to 
 
 1. Go to [supabase.com](https://supabase.com) and create a new project (or use an existing one).
 2. In your Supabase project, go to **Settings → Database**.
-3. Find the **Connection string** (pooler) — copy it. It looks like:
+3. Find the **Connection string** → **Connection pooling** / **Pooler** tab and copy it.
 
-   ```
-   postgresql://postgres.xxxxxx:password@aws-0-us-east-1.pooler.supabase.com:6543/postgres
-   ```
+### ⚠️ Use the POOLER host, not the direct host
 
-4. Paste that value into `.env.local` at the `DATABASE_URL=` line.
+Supabase's *direct* host (`db.<ref>.supabase.co`) resolves to **IPv6 only** on
+newer projects. Most networks — including Vercel's build and runtime — have no
+IPv6 route, so connections fail with `ENOTFOUND` / `getaddrinfo`.
+
+Always use the **pooler** host, which has IPv4 addresses:
+
+```
+# ✅ WORKS — pooler, session mode (port 5432)
+postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+
+# ❌ FAILS — direct host is IPv6-only
+postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgres
+```
+
+Note the username differs between the two: the pooler needs
+`postgres.<project-ref>`, the direct host uses just `postgres`.
+
+> In testing, the pooler **transaction** mode (port `6543`) rejected the
+> password with `28P01` while **session** mode (port `5432`) authenticated
+> successfully. If `6543` fails for you, use `5432`.
+
+4. Paste the pooler value into `.env.local` at the `DATABASE_URL=` line.
+   If the password contains special characters (`@ : / ? # [ ] &`), percent-encode
+   them, or reset the database password to an alphanumeric value in Supabase.
 
 ## 2. Configure Environment Variables
 
@@ -125,19 +146,39 @@ CREATE INDEX IF NOT EXISTS "session_token_idx" ON "session"("token");
 CREATE INDEX IF NOT EXISTS "account_userId_idx" ON "account"("userId");
 ```
 
-## 4. Run the Migration
+## 4. Initialize the Database
 
-To migrate your existing `content.json` into the database:
+Run the initialization script to create the schema and seed content:
 
 ```bash
-npx tsx src/scripts/migrate-content.ts
+npx tsx src/scripts/init-db.ts
 ```
 
 This will:
 
-1. Create the `content` table if it doesn't exist.
-2. Insert the JSON blob from `src/app/data/content.json` keyed as `'main'`.
-3. Log success or fallback to the bundled JSON if no file is found.
+1. Create the Better Auth tables (`user`, `session`, `account`, `verification`).
+2. Create the `content` table and seed it from `src/app/data/content.json`.
+3. Create the admin account from `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+4. Print the tables and row counts so you can confirm it worked.
+
+Expected output:
+
+```
+Database: postgresql://postgres.xxxx:****@aws-0-<region>.pooler.supabase.com:5432/postgres
+
+1. Creating auth tables and admin user...
+[auth] Admin account created for admin@seamrahman.com
+2. Creating content table and seeding content...
+3. Verifying tables...
+   Tables: account, content, session, user, verification
+   content rows: 1
+   user rows: 1
+
+Done.
+```
+
+> `src/scripts/migrate-content.ts` still exists if you only want to re-sync
+> content without touching the auth tables.
 
 ## 5. Local Development
 

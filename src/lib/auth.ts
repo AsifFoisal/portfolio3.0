@@ -1,9 +1,12 @@
 import { betterAuth } from 'better-auth';
 import { nextCookies } from 'better-auth/next-js';
-import { Kysely, PostgresDialect } from 'kysely';
+import { PostgresDialect } from 'kysely';
 import { Pool } from 'pg';
-import { execute } from './db';
 
+/**
+ * PostgreSQL connection pool for Better Auth.
+ * Uses the Supabase pooler URL from DATABASE_URL.
+ */
 const pgPool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: 1,
@@ -13,23 +16,13 @@ const pgPool = new Pool({
     : undefined,
 });
 
-/**
- * Kysely PostgresDialect wrapper.
- *
- * Important: We provide a real pg Pool to satisfy the Kysely type system,
- * but all actual SQL execution in this project goes through `db.execute()`
- * (which wraps pg and converts `?` → `$N` placeholders). The dialect's `execute`
- * method is not used for our queries, but it must exist and return a compatible
- * shape so Kysey types are satisfied.
- */
-const kyselyDialect = new PostgresDialect({
-  pool: pgPool,
-});
+// Better Auth 1.7.x does not recognise a bare Kysely instance (Kysely 0.29 no
+// longer exposes a public `dialect` property), so we hand it the dialect plus
+// an explicit database type instead.
+const dialect = new PostgresDialect({ pool: pgPool });
 
 export const auth = betterAuth({
-  database: new Kysely({
-    dialect: kyselyDialect,
-  }),
+  database: { dialect, type: 'postgres' },
   emailAndPassword: {
     enabled: true,
   },
