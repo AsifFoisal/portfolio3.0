@@ -961,8 +961,17 @@ p {
   text-align: center;
 }
 
+/* The heading pins itself while the scattered steps scroll past; the cards
+   (opaque #f4f4f4, later in DOM order) paint over it. */
+.approach-section > .large-heading {
+  position: sticky;
+  top: 14vh;
+  z-index: 0;
+}
+
 .approach-steps {
   position: relative;
+  z-index: 1;
   height: calc(1130 * var(--unit));
   margin-top: calc(60 * var(--unit));
 }

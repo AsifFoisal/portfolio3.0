@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import './SiteNav.css';
+import Image from 'next/image';
 
 export default function SiteNav() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -169,7 +170,7 @@ export default function SiteNav() {
           <div className="site-nav__row">
             {/* BRAND / AVATAR */}
             <a className="flex items-center gap-3 text-white no-underline -translate-x-3.5" href="#top">
-              <img className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover bg-slate-800" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200" alt="Seam Rahman" />
+              <Image width={4} height={4} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover bg-slate-800" src="/images/designer-portrait.jpg" alt="Seam Rahman" />
               <span className="site-nav__name font-extrabold text-sm sm:text-base tracking-wider uppercase">SEAM RAHMAN</span>
             </a>
 
