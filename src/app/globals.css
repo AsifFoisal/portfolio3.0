@@ -998,6 +998,7 @@ p {
 
 .approach-step:hover .approach-step-image,
 .approach-step:focus-within .approach-step-image {
+  z-index: 2;
   opacity: 1;
   transform: scale(1);
 }
