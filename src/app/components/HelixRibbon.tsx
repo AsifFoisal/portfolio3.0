@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-// ✅ Type-only import using bare specifier — resolved by @types/three, NOT bundled
-import type * as THREE_NS from 'three';
+import * as THREE from 'three';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import type {
   WebGLRenderer,
   Scene,
@@ -15,38 +16,10 @@ import type {
   Raycaster,
 } from 'three';
 
-type ThreeModule = typeof THREE_NS;
-
-/* ==================== GLOBAL TYPE DECLARATIONS ==================== */
-interface GSAPTicker {
-  add: (cb: (time: number) => void) => void;
-  remove: (cb: (time: number) => void) => void;
-  lagSmoothing: (threshold: number) => void;
-}
-
 interface ScrollTriggerInstance {
   progress: number;
   start: number;
   kill: () => void;
-}
-
-interface ScrollTriggerStatic {
-  registerPlugin: (...plugins: unknown[]) => void;
-  create: (config: Record<string, unknown>) => ScrollTriggerInstance;
-  refresh: () => void;
-  update: () => void;
-}
-
-interface GSAPStatic {
-  registerPlugin: (...plugins: unknown[]) => void;
-  ticker: GSAPTicker;
-}
-
-declare global {
-  interface Window {
-    gsap: GSAPStatic;
-    ScrollTrigger: ScrollTriggerStatic;
-  }
 }
 
 /* ==================== STYLES ==================== */
@@ -150,28 +123,14 @@ export default function TrionnRibbon() {
 
     (async () => {
       try {
-        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/gsap.min.js');
-        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/ScrollTrigger.min.js');
         if (cancelled || !rootRef.current) return;
 
-        await new Promise((r) => setTimeout(r, 50));
-
-        const THREE = (await import(
-          /* webpackIgnore: true */ /* @vite-ignore */
-          'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js'
-        )) as unknown as ThreeModule;
-        if (cancelled || !rootRef.current) return;
-
-        const gsap = window.gsap;
-        const ScrollTrigger = window.ScrollTrigger;
-        if (!gsap || !ScrollTrigger) {
-          console.error('[trionn-ribbon] GSAP or ScrollTrigger not found on window');
-          return;
-        }
+        // Keep GSAP and ScrollTrigger in the bundle so initialization does not
+        // depend on CDN scripts having loaded onto window first.
         gsap.registerPlugin(ScrollTrigger);
 
         /* ==================== CONSTANTS ==================== */
-        const BACK_MODE: 'mirror' | 'transparent' = 'mirror';
+        const BACK_MODE: string = 'mirror';
         const N = 12;
         const C = 12;
         const R = 4.2;

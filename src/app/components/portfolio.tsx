@@ -20,7 +20,7 @@ import { ContentProvider, SectionHeading, useSiteContent } from '../data/content
 import type { Project, SiteContent } from '../data/content-types';
 import { downloadResume } from '../utils/downloadResume';
 import { cn } from '../utils/cn';
-import TrionnHelixRibbon from './HelixRibbon';
+import HelixRibbon from './HelixRibbon';
 
 type Overlay =
   | { kind: 'menu' }
@@ -551,7 +551,7 @@ export default function Portfolio({ content }: { content: SiteContent }) {
 
         <Stories />
 
-        <TrionnHelixRibbon/>
+        <HelixRibbon />
 
         <section className="latest-section" id="latest-works" aria-labelledby="latest-title">
           <h2 id="latest-title"><SectionHeading heading={content.latest.heading} /></h2>
