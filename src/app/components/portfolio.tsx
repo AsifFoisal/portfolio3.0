@@ -486,7 +486,9 @@ export default function Portfolio({ content }: { content: SiteContent }) {
               <CallButton onClick={() => setOverlay({ kind: 'contact', intent: 'project' })}>{content.hero.ctaLabel}</CallButton>
             </div>
           </div>
-          <h1 className="hero-title">
+          <h1 className="hero-title tech-title-frame">
+            <span className="tech-title-corner tech-title-corner-tl" aria-hidden="true" />
+            <span className="tech-title-corner tech-title-corner-tr" aria-hidden="true" />
             <TechText
               text={content.hero.title}
               fontWeight={550}
@@ -494,6 +496,8 @@ export default function Portfolio({ content }: { content: SiteContent }) {
               color="#222222"
               accentColor="#ff4c4e"
             />
+            <span className="tech-title-corner tech-title-corner-bl" aria-hidden="true" />
+            <span className="tech-title-corner tech-title-corner-br" aria-hidden="true" />
           </h1>
           <div className="hero-disciplines">{content.hero.disciplines.map((discipline) => <span key={discipline}>{discipline}</span>)}</div>
           <VideoPoster rounded expandOnScroll />

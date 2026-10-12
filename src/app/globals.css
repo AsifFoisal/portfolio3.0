@@ -257,9 +257,70 @@ p {
 }
 
 .hero-title {
+  position: relative;
   width: 100%;
   margin-top: calc(26 * var(--unit));
   height: calc(150 * var(--unit));
+  border-top: 1px dashed #d8d8d8;
+  border-right: 1px dashed #d8d8d8;
+  border-bottom: 1px dashed #d8d8d8;
+  border-left: 1px dashed #d8d8d8;
+}
+
+.tech-title-frame > .tech-text {
+  position: relative;
+  z-index: 1;
+}
+
+.tech-title-corner {
+  position: absolute;
+  z-index: 2;
+  width: calc(11 * var(--unit));
+  height: calc(11 * var(--unit));
+  pointer-events: none;
+}
+
+.tech-title-corner::before,
+.tech-title-corner::after {
+  content: '';
+  position: absolute;
+  background: #ff4c4e;
+}
+
+.tech-title-corner::before {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.tech-title-corner::after {
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 100%;
+  transform: translateX(-50%);
+}
+
+.tech-title-corner-tl {
+  top: calc(-6 * var(--unit));
+  left: calc(-6 * var(--unit));
+}
+
+.tech-title-corner-tr {
+  top: calc(-6 * var(--unit));
+  right: calc(-6 * var(--unit));
+}
+
+.tech-title-corner-bl {
+  bottom: calc(-6 * var(--unit));
+  left: calc(-6 * var(--unit));
+}
+
+.tech-title-corner-br {
+  right: calc(-6 * var(--unit));
+  bottom: calc(-6 * var(--unit));
 }
 
 .hero-disciplines {
