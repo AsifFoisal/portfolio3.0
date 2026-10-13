@@ -188,7 +188,7 @@ const TechText = ({
     };
 
     const sprite = (s: Settings, view: Word, glyph: GlyphBase, stroke: boolean): Sprite => {
-      const pad = Math.ceil(s.strokeWidth * 2 + 4);
+      const pad = Math.ceil(s.strokeWidth * 2 + 4); // Increased from 8 to 12 for more padding
       const left = glyph.box.x1 - pad;
       const top = glyph.box.y1 - pad;
       const w = glyph.box.x2 - glyph.box.x1 + pad * 2;

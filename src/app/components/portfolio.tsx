@@ -17,7 +17,7 @@ import SiteNav from './SiteNav';
 import RadialMenu from './RadialMenu';
 import { ArrowIcon, PhoneIcon, TurnArrowIcon } from './Icons';
 import { ContentProvider, SectionHeading, useSiteContent } from '../data/content-context';
-import type { Project, SiteContent } from '../data/content-types';
+import type { Project, Service, SiteContent } from '../data/content-types';
 import { downloadResume } from '../utils/downloadResume';
 import { cn } from '../utils/cn';
 import HelixRibbon from './HelixRibbon';
@@ -206,6 +206,45 @@ function ProjectCaption({ project, onOpen }: { project: Project; onOpen: (mode: 
   );
 }
 
+function ServiceCard({ service, index, isOpen, onToggle }: { service: Service; index: number; isOpen: boolean; onToggle: () => void }) {
+  const [hovering, setHovering] = useState(false);
+  const cursorX = useMotionValue(0);
+  const cursorY = useMotionValue(0);
+
+  function trackPointer(event: MouseEvent<HTMLElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    cursorX.set(event.clientX - rect.left);
+    cursorY.set(event.clientY - rect.top);
+  }
+
+  return (
+    <article
+      className={`service-item ${isOpen ? 'is-open' : ''} ${hovering ? 'service-item-cursor-active' : ''}`}
+      onMouseEnter={(event) => { setHovering(true); trackPointer(event); }}
+      onMouseMove={trackPointer}
+      onMouseLeave={() => setHovering(false)}
+    >
+      <motion.span
+        className="service-view-cursor"
+        style={{ x: cursorX, y: cursorY }}
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: hovering ? 1 : 0, scale: hovering ? 1 : 0.8 }}
+        transition={{ duration: 0.2 }}
+        aria-hidden="true"
+      >
+        VIEW
+      </motion.span>
+      <h3><button className="service-toggle" id={`service-toggle-${index}`} aria-expanded={isOpen} aria-controls={`service-panel-${index}`} onClick={onToggle}><span className="service-heading-text"><span className="service-number">0{index + 1}</span>{service.title}</span><span className="service-toggle-icon"><span /><span /></span></button></h3>
+      <div className="service-panel" id={`service-panel-${index}`} role="region" aria-labelledby={`service-toggle-${index}`} inert={!isOpen}>
+        <div className="service-panel-clip"><div className="service-details">
+          <div className="service-description"><p>{service.description}</p><div className="service-tags">{service.tags.map((tag, tagIndex) => <span key={`${tag}-${tagIndex}`}>{tag}</span>)}</div></div>
+          <div className="service-media" aria-hidden="true"><div /><div /></div>
+        </div></div>
+      </div>
+    </article>
+  );
+}
+
 /**
  * Desktop: the heading stays stuck at the top and the number/caption block is
  * stuck on the left — number at the top, text at the bottom — while the cards
@@ -221,7 +260,7 @@ function FeaturedWorks({ onOpen }: { onOpen: (index: number, mode: 'live' | 'des
   const { scrollYProgress } = useScroll({ target: cardsRef, offset: ['start 0.5', 'end 0.5'] });
 
   useMotionValueEvent(scrollYProgress, 'change', (value) => {
-    setActive(Math.min(projects.length - 1, Math.max(0, Math.round(value * (projects.length - 1)))));
+    setActive(Math.min(projects.length - 1, Math.max(0, Math.floor(value * projects.length))));
   });
 
   const slideTransition = { duration: 0.4, ease: 'easeInOut' as const };
@@ -263,7 +302,7 @@ function FeaturedWorks({ onOpen }: { onOpen: (index: number, mode: 'live' | 'des
   );
 }
 
-const titleCls = 'whitespace-nowrap leading-none font-medium tracking-[-0.03em]';
+const titleCls = 'whitespace-nowrap uppercase leading-none font-medium tracking-[-0.03em]';
 
 /**
  * Visual stories — a scroll-scrubbed expanding video box (motion port of the
@@ -306,7 +345,7 @@ function Stories() {
                 <motion.h2 className={`stories-side-title ${titleCls} text-[clamp(80px,9vw,150px)]`} style={{ y: visualY }}>{stories.mobileTitleTop}</motion.h2>
               </div>
             </div>
-            <div className="absolute inset-y-0 left-[calc(100%+40px)] hidden items-center lg:flex">
+            <div className="absolute inset-y-0 left-[calc(100%+10px)] hidden items-center lg:flex">
               <div className="overflow-hidden">
                 <motion.h2 className={`stories-side-title ${titleCls} text-[clamp(80px,9vw,150px)]`} style={{ y: storiesY }}>{stories.mobileTitleBottom}</motion.h2>
               </div>
@@ -343,7 +382,16 @@ const QUOTE_DURATION = 7;
  */
 function Testimonials() {
   const content = useSiteContent();
-  const testimonials = content.testimonials.items;
+  const testimonials = content.testimonials.items.map((testimonial) => ({
+    ...testimonial,
+    avatar: testimonial.name === 'Swadhin Biswas'
+      ? '/images/Swadhin.png'
+      : testimonial.name === 'Naimur Rahman'
+        ? '/images/Naimur.png'
+        : testimonial.name === 'Al Amin Mun'
+          ? '/images/Mun.png'
+        : testimonial.avatar,
+  }));
   const rootRef = useRef<HTMLElement>(null);
   const [active, setActive] = useState(0);
   const [inView, setInView] = useState(false);
@@ -458,6 +506,7 @@ export default function Portfolio({ content }: { content: SiteContent }) {
   return (
     <ContentProvider content={content}>
       <a className="skip-link" href="#main">Skip to content</a>
+      <div className="portfolio-rail-content">
       <header className="site-header page-width" id="home">
         <button className="cv-button" onClick={() => downloadResume(content.experience.items)}>Curriculum Vitae | CV</button>
         <button className="menu-button" onClick={() => setOverlay({ kind: 'menu' })} aria-label="Open navigation menu" aria-haspopup="dialog" aria-expanded={overlay?.kind === 'menu'}><span /><span /><span /></button>
@@ -534,21 +583,13 @@ export default function Portfolio({ content }: { content: SiteContent }) {
               <div><p className="eyebrow">{content.services.eyebrow} <TurnArrowIcon /></p><h2 className="section-title" id="services-title"><SectionHeading heading={content.services.heading} /></h2></div>
               <CallButton onClick={() => setOverlay({ kind: 'contact', intent: 'call' })}>{content.services.callLabel}</CallButton>
             </div>
-            <div className="service-list">
-              {content.services.items.map((service, index) => {
-                const isOpen = openService === index;
-                return (
-                  <article className={`service-item ${isOpen ? 'is-open' : ''}`} key={`${service.title}-${index}`}>
-                    <h3><button className="service-toggle" id={`service-toggle-${index}`} aria-expanded={isOpen} aria-controls={`service-panel-${index}`} onClick={() => setOpenService(isOpen ? null : index)}><span className="service-heading-text"><span className="service-number">0{index + 1}</span>{service.title}</span><span className="service-toggle-icon"><span /><span /></span></button></h3>
-                    <div className="service-panel" id={`service-panel-${index}`} role="region" aria-labelledby={`service-toggle-${index}`} inert={!isOpen}>
-                      <div className="service-panel-clip"><div className="service-details">
-                        <div className="service-description"><p>{service.description}</p><div className="service-tags">{service.tags.map((tag, tagIndex) => <span key={`${tag}-${tagIndex}`}>{tag}</span>)}</div></div>
-                        <div className="service-media" aria-hidden="true"><div /><div /></div>
-                      </div></div>
-                    </div>
-                  </article>
-                );
-              })}
+             <div className="service-list">
+               {content.services.items.map((service, index) => {
+                 const isOpen = openService === index;
+                 return (
+                  <ServiceCard key={`${service.title}-${index}`} service={service} index={index} isOpen={isOpen} onToggle={() => setOpenService(isOpen ? null : index)} />
+                 );
+               })}
             </div>
           </section>
         </div>
@@ -597,6 +638,7 @@ export default function Portfolio({ content }: { content: SiteContent }) {
 
         <Testimonials />
       </main>
+      </div>
 
       <SiteFooter />
       <SiteNav />

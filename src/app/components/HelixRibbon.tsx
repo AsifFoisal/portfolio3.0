@@ -33,6 +33,7 @@ const styles = `
     overflow-x: hidden; 
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    z-index: 5;
   }
   
   .trionn-ribbon-root * { margin: 0; padding: 0; box-sizing: border-box; }

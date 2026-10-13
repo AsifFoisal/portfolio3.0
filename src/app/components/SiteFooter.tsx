@@ -8,29 +8,19 @@ import { InstagramIcon, WhatsAppIcon } from './Icons';
 
 function IconBolt() {
   return (
-    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true">
-      <path d="M13 2 4.8 13.4h4.9L10.9 22l8.3-11.4h-4.9L13 2Z" />
-    </svg>
+    <img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-svg@latest/icons/openai.svg" alt="" width="28" height="28" />
   );
 }
 
 function IconRotate() {
   return (
-    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-      <path d="M20.5 12a8.5 8.5 0 1 1-2.5-6" />
-      <path d="M20.5 3.2v4.3h-4.3" />
-    </svg>
+    <img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-svg@latest/icons/grok.svg" alt="" width="28" height="28" />
   );
 }
 
 function IconDiagram() {
   return (
-    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <rect x="9" y="2.5" width="6" height="5" rx="1" />
-      <rect x="2.5" y="16.5" width="6" height="5" rx="1" />
-      <rect x="15.5" y="16.5" width="6" height="5" rx="1" />
-      <path d="M12 7.5v4.5M5.5 16.5v-2h13v2" />
-    </svg>
+    <img src="https://cdn.simpleicons.org/perplexity/111827" alt="" width="28" height="28" />
   );
 }
 
@@ -218,29 +208,29 @@ export default function SiteFooter() {
                 </div>
               </div>
 
-              <div className="flex flex-col justify-start md:col-span-4 lg:col-span-4">
-                <h3 className="mb-4 text-xl font-bold text-center text-gray-900">{footer.servicesHeading}</h3>
-                <div className="mx-auto flex max-w-xs flex-col space-y-2">
+              <div className="footer-services-column flex flex-col justify-start md:col-span-4 lg:col-span-4">
+                <h3 className="footer-services-heading mb-4 text-xl font-bold text-center text-gray-900">{footer.servicesHeading}</h3>
+                <div className="footer-services-list mx-auto flex max-w-xs flex-col">
                   {content.services.items.map((service) => (
-                    <a key={service.title} href="#services" className="service-badge rounded-lg px-4 py-2.5 text-center text-xs font-medium text-gray-800">
+                    <a key={service.title} href="#services" className="footer-service-link rounded-lg px-4 py-2.5 text-center text-xs font-medium text-gray-800">
                       {service.title}
                     </a>
                   ))}
                 </div>
               </div>
 
-              <div className="flex flex-col items-center justify-between space-y-6 text-center md:col-span-3 lg:col-span-4">
+              <div className="footer-tools flex flex-col items-center justify-between space-y-6 text-center md:col-span-3 lg:col-span-4">
                 <div className="space-y-3">
                   <p className="text-xs font-semibold tracking-wide text-gray-700">{footer.askAiLabel}</p>
                   <div className="flex items-center justify-center space-x-2.5">
-                    <button className="icon-circle" title="Ask ChatGPT"><IconBolt /></button>
-                    <button className="icon-circle" title="Ask Claude"><IconRotate /></button>
-                    <button className="icon-circle" title="Ask Perplexity"><IconDiagram /></button>
+                    <a className="icon-circle" href="https://chatgpt.com/?q=Seam%20Rahman%20UI%20UX" target="_blank" rel="noreferrer" title="Ask ChatGPT" aria-label="Ask ChatGPT about Seam Rahman UI UX"><IconBolt /></a>
+                    <a className="icon-circle" href="https://grok.com/?q=Seam%20Rahman%20UI%20UX" target="_blank" rel="noreferrer" title="Ask Grok" aria-label="Ask Grok about Seam Rahman UI UX"><IconRotate /></a>
+                    <a className="icon-circle" href="https://www.perplexity.ai/search/new?q=Seam%20Rahman%20UI%20UX" target="_blank" rel="noreferrer" title="Ask Perplexity" aria-label="Ask Perplexity about Seam Rahman UI UX"><IconDiagram /></a>
                   </div>
                 </div>
 
                 <div>
-                  <a href="#projects" className="btn-black inline-block w-full rounded-lg px-6 py-2.5 text-center text-xs font-semibold sm:w-auto">
+                   <a href="#projects" className="footer-projects-button btn-black inline-block w-full rounded-lg px-6 py-2.5 text-center text-xs font-semibold sm:w-auto">
                     View all projects
                   </a>
                 </div>
@@ -248,9 +238,9 @@ export default function SiteFooter() {
                 <div className="space-y-3 pt-1">
                   <p className="text-xs font-semibold tracking-wide text-gray-700">Follow me on social media</p>
                   <div className="flex items-center justify-center space-x-2.5">
-                    <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="icon-circle text-xs font-bold" title="LinkedIn">in</a>
-                    <a href="https://behance.net" target="_blank" rel="noreferrer" className="icon-circle text-xs font-bold" title="Behance">Be</a>
-                    <a href="https://instagram.com" target="_blank" rel="noreferrer" className="icon-circle" title="Instagram"><InstagramIcon className="h-3.5 w-3.5" /></a>
+                    <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="icon-circle" title="LinkedIn" aria-label="LinkedIn"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/linkedin.svg" alt="" width="22" height="22" /></a>
+                    <a href="https://behance.net" target="_blank" rel="noreferrer" className="icon-circle" title="Behance" aria-label="Behance"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/behance.svg" alt="" width="24" height="24" /></a>
+                    <a href="https://instagram.com" target="_blank" rel="noreferrer" className="icon-circle" title="Instagram" aria-label="Instagram"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/instagram.svg" alt="" width="24" height="24" /></a>
                   </div>
                 </div>
               </div>
