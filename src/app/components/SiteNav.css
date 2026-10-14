@@ -4,17 +4,26 @@
 .nav-system-wrapper {
   --color-nav: #000000;
   --color-nav-fg: #ffffff;
-  --font-nav: 'Bai Jamjuree', sans-serif;
+  --font-nav: var(--font-display, var(--font-jamjuree), 'Bai Jamjuree', sans-serif);
 
   position: fixed;
   bottom: 20px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, calc(100% + 40px));
+  opacity: 0;
+  pointer-events: none;
   width: min(620px, calc(100vw - 1.5rem));
   z-index: 50;
   font-family: var(--font-nav);
   padding-left: 10px;
   padding-right: 10px;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+}
+
+.nav-system-wrapper.visible {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* SVG Notch Shape */

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import Image from 'next/image';
 import { motion, useAnimationFrame, useMotionValue, useSpring } from 'motion/react';
 import { useSiteContent } from '../data/content-context';
-import { InstagramIcon, WhatsAppIcon } from './Icons';
+import { InstagramIcon, WhatsApp3DIcon, WhatsAppIcon } from './Icons';
 
 function IconBolt() {
   return (
@@ -105,7 +105,7 @@ function FooterMarquee({ whatsappUrl, marqueeText, marqueeSymbol, cursorLabel }:
           <div key={k} aria-hidden={k === 1 || undefined} className="flex shrink-0 items-center">
             {Array.from({ length: 3 }).map((_, j) => (
               <span key={j} className="flex items-center">
-                <span className="whitespace-nowrap px-6 text-[clamp(40px,6vw,90px)] font-extrabold uppercase leading-none tracking-wider transition-colors duration-500 group-hover:text-[#ff4c4e] lg:px-10">
+                <span className="footer-marquee-text whitespace-nowrap px-6 text-[clamp(40px,6vw,90px)] font-extrabold uppercase leading-none tracking-wider transition-all duration-500 lg:px-10">
                   {marqueeText}
                 </span>
                 <span className="shrink-0 text-[clamp(22px,3vw,44px)] leading-none text-[#ff4c4e] transition-all duration-1000 group-hover:rotate-180 group-hover:text-[#1a1a1a]">{marqueeSymbol}</span>
@@ -186,11 +186,11 @@ export default function SiteFooter() {
                     href={footer.whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn-black inline-flex cursor-pointer items-center space-x-2.5 rounded-full px-5 py-2.5 text-sm font-medium"
+                    className="say-hello-btn"
                   >
-                    <span>{footer.sayHelloLabel}</span>
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white">
-                      <WhatsAppIcon className="h-3 w-3" />
+                    <span className="say-hello-btn__text">{footer.sayHelloLabel}</span>
+                    <span className="say-hello-btn__badge">
+                      <WhatsApp3DIcon className="say-hello-btn__icon" />
                     </span>
                   </a>
                 </div>
@@ -230,7 +230,7 @@ export default function SiteFooter() {
                 </div>
 
                 <div>
-                   <a href="#projects" className="footer-projects-button btn-black inline-block w-full rounded-lg px-6 py-2.5 text-center text-xs font-semibold sm:w-auto">
+                  <a href="#projects" className="footer-projects-button">
                     View all projects
                   </a>
                 </div>

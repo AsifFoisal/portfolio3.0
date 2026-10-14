@@ -145,8 +145,8 @@ export default function TrionnRibbon() {
         const DIP_A = 1.6;
         const hoverLerpK = 0.12;
 
-        // Ensure enough scroll distance to clear the whole ribbon
-        const totalScroll = 7000;
+        // Scroll distance for one pass through
+        const totalScroll = 3500;
 
         const CARD_W = 1.9;
         const CARD_H = (CARD_W * 712) / 1024;
@@ -508,6 +508,12 @@ export default function TrionnRibbon() {
           idleAngle += idleSpeed * dt;
         }
 
+        /* ==================== CAMERA ZOOM (active while scrolling) ==================== */
+        const CAM_Z = 12;
+        const CAM_Z_ZOOMED = 10.1; // "a bit zoomed" toward the screen
+        let camZ = CAM_Z;
+        let lastScrollTime = -Infinity;
+
         /* ==================== SCROLL TRIGGER ==================== */
         const section = rootRef.current;
         let scrollProgress = 0;
@@ -522,6 +528,7 @@ export default function TrionnRibbon() {
           anticipatePin: 1,
           onUpdate: (self: ScrollTriggerInstance) => {
             scrollProgress = self.progress;
+            lastScrollTime = performance.now();
             renderTick();
             syncTicker();
           },
@@ -554,6 +561,13 @@ export default function TrionnRibbon() {
 
         /* ==================== renderTick (TOP-DOWN VANISHING LOGIC) ==================== */
         function renderTick(): void {
+          // Zoom the camera slightly toward the helix while actively scrolling,
+          // ease back to the resting distance once scrolling stops.
+          const scrolling = performance.now() - lastScrollTime < 250;
+          const targetZ = scrolling ? CAM_Z_ZOOMED : CAM_Z;
+          camZ += (targetZ - camZ) * 0.07;
+          cam.position.z = camZ;
+
           // Total rotation range. Increased to ensure full exit.
           const totalAngle = Math.PI * 12;
 
@@ -662,8 +676,8 @@ export default function TrionnRibbon() {
       <style>{styles}</style>
       <div ref={rootRef} className="trionn-ribbon-root">
         <div className="headline">
-          <h1 className="word-a">DESIGN IN</h1>
-          <h1 className="word-b">MOTION</h1>
+          <h1 className="word-a">LATEST DESIGN</h1>
+          <h1 className="word-b">WORKS</h1>
           <p className="sub">
             EXPLORING IDEAS THROUGH
             <br />

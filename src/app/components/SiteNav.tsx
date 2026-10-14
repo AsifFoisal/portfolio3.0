@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import './SiteNav.css';
 import Image from 'next/image';
+import { WhatsApp3DIcon } from './Icons';
 
 export default function SiteNav() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const [scrollPercentage, setScrollPercentage] = useState(0);
   const progressCircleRef = useRef<SVGCircleElement>(null);
 
@@ -24,6 +26,22 @@ export default function SiteNav() {
       if (progressCircleRef.current) {
         const offset = c - (scrollPercent / 100) * c;
         progressCircleRef.current.style.strokeDashoffset = String(offset);
+      }
+
+      // Navbar is hidden on the first page / hero section, and visible when scrolled down
+      const hero = document.querySelector('.hero') as HTMLElement | null;
+      let shouldShow = false;
+      if (hero) {
+        const rect = hero.getBoundingClientRect();
+        // Visible when scrolled past the hero section (hero bottom enters upper viewport)
+        shouldShow = rect.bottom < window.innerHeight * 0.6;
+      } else {
+        shouldShow = window.scrollY > 400;
+      }
+
+      setIsVisible(shouldShow);
+      if (!shouldShow) {
+        setMenuOpen(false);
       }
     }
 
@@ -46,12 +64,12 @@ export default function SiteNav() {
       {/* BACKGROUND OVERLAY */}
       <div
         id="menuOverlay"
-        className={menuOpen ? 'menu-overlay open' : 'menu-overlay'}
+        className={menuOpen && isVisible ? 'menu-overlay open' : 'menu-overlay'}
         onClick={() => setMenuOpen(false)}
       />
 
       {/* NAVIGATION SYSTEM WRAPPER */}
-      <div className="nav-system-wrapper">
+      <div className={`nav-system-wrapper ${isVisible ? 'visible' : ''}`}>
 
         {/* EXPANDED MENU DRAWER (SLIDES UP FROM BEHIND THE NAVBAR) */}
         <div id="menuDrawer" className={menuOpen ? 'menu-drawer open' : 'menu-drawer'}>
@@ -60,7 +78,7 @@ export default function SiteNav() {
             <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Menu</span>
             <button
               id="closeMenuBtn"
-              className="w-12 h-12 bg-[#222222] hover:bg-black text-white rounded-2xl flex items-center justify-center transition-colors shadow-md"
+              className="w-12 h-12 btn-black flex items-center justify-center shadow-md cursor-pointer"
               onClick={() => setMenuOpen(false)}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -72,21 +90,19 @@ export default function SiteNav() {
 
           {/* Main Navigation Links */}
           <div className="space-y-4 mb-8">
-            <a href="#projects" className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase">ALL PROJECTS</a>
-            <a href="#about" className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase">ABOUT ME</a>
-            <a href="#services" className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase">MY SERVICES</a>
-            <a href="#experience" className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase">EXPERIENCE</a>
+            <a href="#projects" onClick={() => setMenuOpen(false)} className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase">ALL PROJECTS</a>
+            <a href="#about" onClick={() => setMenuOpen(false)} className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase">ABOUT ME</a>
+            <a href="#services" onClick={() => setMenuOpen(false)} className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase">MY SERVICES</a>
+            <a href="#experience" onClick={() => setMenuOpen(false)} className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase">EXPERIENCE</a>
           </div>
 
           {/* WhatsApp Pill Button */}
           <div className="flex justify-center mb-8">
-            <a href="https://wa.me/" target="_blank" className="inline-flex items-center gap-3 bg-[#1e1e1e] hover:bg-black text-white px-7 py-3.5 rounded-2xl text-sm font-semibold shadow-lg transition-all transform hover:-translate-y-0.5">
-              <span>Contact With Me</span>
-              <div className="w-6 h-6 rounded-full bg-[#25D366] flex items-center justify-center text-white">
-                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.705 1.754zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-                </svg>
-              </div>
+            <a href="https://wa.me/" target="_blank" rel="noreferrer" className="say-hello-btn">
+              <span className="say-hello-btn__text">Contact With Me</span>
+              <span className="say-hello-btn__badge">
+                <WhatsApp3DIcon className="say-hello-btn__icon" />
+              </span>
             </a>
           </div>
 
@@ -169,7 +185,7 @@ export default function SiteNav() {
           {/* CONTENT ROW */}
           <div className="site-nav__row">
             {/* BRAND / AVATAR */}
-            <a className="flex items-center gap-3 text-white no-underline -translate-x-3.5" href="#top">
+            <a className="flex items-center gap-3 text-white no-underline -translate-x-3.5 cursor-pointer" href="#home" onClick={(e) => { e.preventDefault(); scrollToTop(); }}>
               <Image width={4} height={4} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover bg-slate-800" src="/images/designer-portrait.jpg" alt="Seam Rahman" />
               <span className="site-nav__name font-extrabold text-sm sm:text-base tracking-wider uppercase">SEAM RAHMAN</span>
             </a>

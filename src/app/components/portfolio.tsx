@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { motion, AnimatePresence, animate, useInView, useMotionTemplate, useMotionValueEvent, useMotionValue, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react';
 import Lenis from 'lenis';
@@ -15,12 +16,13 @@ import ScrollStack, { ScrollStackItem } from './ScrollStack';
 import SiteFooter from './SiteFooter';
 import SiteNav from './SiteNav';
 import RadialMenu from './RadialMenu';
-import { ArrowIcon, PhoneIcon, TurnArrowIcon } from './Icons';
+import { ArrowIcon, HamburgerIcon, PhoneIcon, TurnArrowIcon } from './Icons';
 import { ContentProvider, SectionHeading, useSiteContent } from '../data/content-context';
 import type { Project, Service, SiteContent } from '../data/content-types';
 import { downloadResume } from '../utils/downloadResume';
 import { cn } from '../utils/cn';
 import HelixRibbon from './HelixRibbon';
+import PushLoader from './PushLoader';
 
 type Overlay =
   | { kind: 'menu' }
@@ -462,8 +464,14 @@ function Testimonials() {
 export default function Portfolio({ content }: { content: SiteContent }) {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [openService, setOpenService] = useState<number | null>(0);
+  const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const lenisRef = useRef<Lenis | null>(null);
   const closeOverlay = useCallback(() => setOverlay(null), []);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -505,11 +513,19 @@ export default function Portfolio({ content }: { content: SiteContent }) {
 
   return (
     <ContentProvider content={content}>
+      {mounted && loading && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2147483000 }}>
+          <PushLoader onFinish={() => setLoading(false)} />
+        </div>,
+        document.body
+      )}
       <a className="skip-link" href="#main">Skip to content</a>
       <div className="portfolio-rail-content">
       <header className="site-header page-width" id="home">
         <button className="cv-button" onClick={() => downloadResume(content.experience.items)}>Curriculum Vitae | CV</button>
-        <button className="menu-button" onClick={() => setOverlay({ kind: 'menu' })} aria-label="Open navigation menu" aria-haspopup="dialog" aria-expanded={overlay?.kind === 'menu'}><span /><span /><span /></button>
+        <button className="menu-button" onClick={() => setOverlay({ kind: 'menu' })} aria-label="Open navigation menu" aria-haspopup="dialog" aria-expanded={overlay?.kind === 'menu'}>
+          <HamburgerIcon className="menu-button-icon" />
+        </button>
       </header>
 
       <main id="main">
@@ -598,8 +614,7 @@ export default function Portfolio({ content }: { content: SiteContent }) {
 
         <HelixRibbon />
 
-        <section className="latest-section" id="latest-works" aria-labelledby="latest-title">
-          <h2 id="latest-title"><SectionHeading heading={content.latest.heading} /></h2>
+        <section className="latest-section" id="latest-works" aria-label="Latest design works">
           <div className="latest-carousel">
             <CircularCarousel
               items={content.latest.items}

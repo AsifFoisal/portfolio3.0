@@ -1,4 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,500&display=swap');
 @import "tailwindcss";
+
+/* Editorial serif used by the push loader's revealed name */
+.font-editorial {
+  font-family: 'Playfair Display', 'Times New Roman', Times, serif;
+}
+
+/*
+  Tell Tailwind v4's base layer to use our Next.js-loaded Inter font.
+  --font-sans is the variable Tailwind uses for its html/body font-family reset.
+  --font-display is what we use for Bai Jamjuree (headings / captions).
+*/
+@theme {
+  --font-sans: var(--font-inter), 'Inter', ui-sans-serif, system-ui, Arial, sans-serif;
+  --font-display: var(--font-jamjuree), var(--font-inter), 'Inter', Arial, sans-serif;
+}
+
 :root {
   font-family: var(--font-inter), 'Inter', Arial, sans-serif;
   color: #1a1a1a;
@@ -27,7 +44,7 @@ h4,
 .dialog-eyebrow,
 .hero-disciplines,
 .video-cursor span {
-  font-family: var(--font-jamjuree), var(--font-inter), 'Inter', Arial, sans-serif;
+  font-family: var(--font-display);
 }
 
 html {
@@ -150,26 +167,32 @@ p {
   transition: color 200ms, background 200ms;
 }
 
-.cv-button:hover {
+.cv-button:hover,
+.cv-button:focus-visible {
   background: var(--accent);
-  color: #000;
+  color: #fff;
 }
 
 .menu-button {
   width: calc(56 * var(--unit));
   height: calc(56 * var(--unit));
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: calc(4 * var(--unit));
   background: #fafafa;
   border-radius: 50%;
-  transition: transform 250ms;
+  color: #323b44;
+  transition: transform 250ms, color 200ms, background 200ms;
 }
 
 .menu-button:hover {
   transform: rotate(90deg);
+}
+
+.menu-button-icon {
+  width: calc(24 * var(--unit));
+  height: auto;
+  display: block;
 }
 
 .menu-button span {
@@ -216,32 +239,44 @@ p {
 }
 
 .hero-description .call-button {
-  margin-top: calc(25 * var(--unit));
-}
-
-.call-button {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  gap: calc(8 * var(--unit));
-  height: calc(43 * var(--unit));
+  gap: calc(10 * var(--unit));
+  height: calc(44 * var(--unit));
   padding: 0 calc(20 * var(--unit));
-  border-radius: calc(10 * var(--unit));
+  border-radius: calc(12 * var(--unit));
+  border: 1px solid rgba(255, 255, 255, 0.1);
   font-size: calc(14 * var(--unit));
   font-weight: 400;
   color: #fff;
-  background: linear-gradient(125deg, #383838 0%, #171717 55%, #070707 100%);
-  box-shadow: inset 0 1px 0 #3b3b3b;
-  transition: box-shadow 200ms, transform 200ms;
+  background:
+    radial-gradient(140% 140% at 0% 0%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.05) 35%, transparent 70%),
+    linear-gradient(175deg, #222222 0%, #0d0d0d 100%);
+  box-shadow:
+    inset 1.5px 1.5px 2px 0px rgba(255, 255, 255, 0.3),
+    inset -1px -1px 2px 0px rgba(0, 0, 0, 0.5),
+    0 8px 20px -3px rgba(0, 0, 0, 0.45);
+  transition: box-shadow 200ms ease, transform 200ms ease, background 200ms ease;
 }
 
 .call-button:hover {
-  box-shadow: inset 0 1px 0 #5d5d5d, 0 0 20px #ffffff0d;
+  background:
+    radial-gradient(140% 140% at 0% 0%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.08) 38%, transparent 72%),
+    linear-gradient(175deg, #2a2a2a 0%, #121212 100%);
+  box-shadow:
+    inset 1.5px 1.5px 3px 0px rgba(255, 255, 255, 0.42),
+    inset -1px -1px 2px 0px rgba(0, 0, 0, 0.5),
+    0 12px 24px -3px rgba(0, 0, 0, 0.55);
   transform: translateY(-2px);
 }
 
 .call-button-icon {
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   width: calc(27 * var(--unit));
@@ -628,25 +663,146 @@ p {
   font-weight: 500;
 }
 
+/* Footer marquee outlined text matching design reference */
+.footer-marquee-text {
+  color: #ffffff;
+  -webkit-text-stroke: 1.5px #000000;
+  text-stroke: 1.5px #000000;
+  paint-order: stroke fill;
+  transition: color 500ms ease, -webkit-text-stroke-color 500ms ease;
+}
+
+.group:hover .footer-marquee-text {
+  color: #ff4c4e;
+  -webkit-text-stroke-color: #ff4c4e;
+}
+
 .footer-projects-button {
   position: relative;
   overflow: hidden;
-  width: min(100%, calc(256 * var(--unit)));
-  height: calc(70 * var(--unit));
-  padding-inline: calc(28 * var(--unit));
-  font-size: calc(20 * var(--unit));
-  border-radius: calc(16 * var(--unit));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(52 * var(--unit));
+  padding-inline: calc(34 * var(--unit));
+  font-family: var(--font-inter), 'Inter', Arial, sans-serif;
+  font-size: calc(16 * var(--unit));
+  font-weight: 500;
+  line-height: 1;
+  color: #ffffff;
+  background:
+    radial-gradient(140% 140% at 0% 0%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.05) 35%, transparent 70%),
+    linear-gradient(175deg, #222222 0%, #0d0d0d 100%);
+  border-radius: calc(14 * var(--unit));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 1.5px 1.5px 2px 0px rgba(255, 255, 255, 0.32),
+    inset -1px -1px 2px 0px rgba(0, 0, 0, 0.5),
+    0 10px 24px -4px rgba(0, 0, 0, 0.5),
+    0 4px 10px -2px rgba(0, 0, 0, 0.3);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease;
+  user-select: none;
 }
 
-.footer-projects-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 42%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.78));
-  pointer-events: none;
+.footer-projects-button:hover {
+  transform: translateY(-2px);
+  background:
+    radial-gradient(140% 140% at 0% 0%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.08) 38%, transparent 72%),
+    linear-gradient(175deg, #2a2a2a 0%, #121212 100%);
+  box-shadow:
+    inset 1.5px 1.5px 3px 0px rgba(255, 255, 255, 0.42),
+    inset -1px -1px 2px 0px rgba(0, 0, 0, 0.5),
+    0 14px 28px -4px rgba(0, 0, 0, 0.6),
+    0 6px 12px -2px rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+}
+
+.footer-projects-button:active {
+  transform: translateY(0);
+  box-shadow:
+    inset 1px 1px 2px 0px rgba(255, 255, 255, 0.2),
+    0 6px 14px -2px rgba(0, 0, 0, 0.45);
+}
+
+/* Redesigned Say Hello WhatsApp rectangular button matching reference */
+.say-hello-btn {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(14 * var(--unit));
+  padding-left: calc(22 * var(--unit));
+  padding-right: calc(10 * var(--unit));
+  height: calc(56 * var(--unit));
+  border-radius: calc(14 * var(--unit));
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  
+  /* Dark rich surface with smoothly blended top-left specular shade */
+  background:
+    radial-gradient(140% 140% at 0% 0%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.05) 35%, transparent 70%),
+    linear-gradient(175deg, #222222 0%, #0d0d0d 100%);
+  
+  /* Whitish/silver top-left rim highlight + soft realistic drop shadow */
+  box-shadow:
+    inset 1.5px 1.5px 2px 0px rgba(255, 255, 255, 0.32),
+    inset -1px -1px 2px 0px rgba(0, 0, 0, 0.5),
+    0 10px 24px -4px rgba(0, 0, 0, 0.55),
+    0 4px 10px -2px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease;
+}
+
+.say-hello-btn:hover {
+  transform: translateY(-2px);
+  background:
+    radial-gradient(140% 140% at 0% 0%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.08) 38%, transparent 72%),
+    linear-gradient(175deg, #2a2a2a 0%, #121212 100%);
+  box-shadow:
+    inset 1.5px 1.5px 3px 0px rgba(255, 255, 255, 0.42),
+    inset -1px -1px 2px 0px rgba(0, 0, 0, 0.5),
+    0 14px 30px -4px rgba(0, 0, 0, 0.65),
+    0 6px 14px -2px rgba(0, 0, 0, 0.4);
+}
+
+.say-hello-btn:active {
+  transform: translateY(0);
+  box-shadow:
+    inset 1px 1px 2px 0px rgba(255, 255, 255, 0.2),
+    0 6px 14px -2px rgba(0, 0, 0, 0.45);
+}
+
+.say-hello-btn__text {
+  font-family: var(--font-inter), 'Inter', Arial, sans-serif;
+  font-size: calc(17 * var(--unit));
+  font-weight: 500;
+  color: #ffffff;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+
+/* White circular background badge behind 3D WhatsApp sphere */
+.say-hello-btn__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(40 * var(--unit));
+  height: calc(40 * var(--unit));
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.say-hello-btn__icon {
+  width: calc(34 * var(--unit));
+  height: calc(34 * var(--unit));
+  display: block;
 }
 
 .page-rails,
@@ -1195,7 +1351,7 @@ p {
 }
 
 .latest-section {
-  padding-top: calc(136 * var(--unit));
+  padding-top: calc(40 * var(--unit));
   padding-bottom: calc(140 * var(--unit));
   overflow: hidden;
   background: #000;
@@ -1565,16 +1721,32 @@ p {
 }
 
 .btn-black {
-  background-color: #161616;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(140% 140% at 0% 0%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.05) 35%, transparent 70%),
+    linear-gradient(175deg, #222222 0%, #0d0d0d 100%);
   color: #fff;
-  transition: all 0.25s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border-radius: calc(14 * var(--unit));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 1.5px 1.5px 2px 0px rgba(255, 255, 255, 0.32),
+    inset -1px -1px 2px 0px rgba(0, 0, 0, 0.5),
+    0 10px 24px -4px rgba(0, 0, 0, 0.55),
+    0 4px 10px -2px rgba(0, 0, 0, 0.35);
+  transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease;
 }
 
 .btn-black:hover {
-  background-color: #2a2a2a;
-  transform: translateY(-1.5px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  transform: translateY(-2px);
+  background:
+    radial-gradient(140% 140% at 0% 0%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.08) 38%, transparent 72%),
+    linear-gradient(175deg, #2a2a2a 0%, #121212 100%);
+  box-shadow:
+    inset 1.5px 1.5px 3px 0px rgba(255, 255, 255, 0.42),
+    inset -1px -1px 2px 0px rgba(0, 0, 0, 0.5),
+    0 14px 30px -4px rgba(0, 0, 0, 0.65),
+    0 6px 14px -2px rgba(0, 0, 0, 0.4);
 }
 
 .footer-toast {
@@ -1977,7 +2149,11 @@ p {
   .menu-button {
     width: 44px;
     height: 44px;
-    gap: 4px;
+  }
+
+  .menu-button-icon {
+    width: 19px;
+    height: auto;
   }
 
   .menu-button span {
@@ -2028,7 +2204,7 @@ p {
     padding-inline: 15px;
     gap: 8px;
     font-size: 12px;
-    border-radius: 8px;
+    border-radius: 11px;
   }
 
   .call-button-icon {
@@ -2303,7 +2479,7 @@ p {
   }
 
   .latest-section {
-    padding-top: 75px;
+    padding-top: 24px;
     padding-bottom: 80px;
   }
 
