@@ -14,12 +14,13 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import {
+  BehanceIcon,
   CloseIcon,
-  GeminiIcon,
   GrokIcon,
   InstagramIcon,
   LinkedInIcon,
   OpenAIIcon,
+  PerplexityIcon,
   WhatsApp3DIcon,
 } from "./Icons";
 import { useSiteContent } from "../data/content-context";
@@ -689,7 +690,7 @@ export default function WorkPage() {
           <a className="wk-menu__mail" href={`mailto:${footer.email}`}>{footer.email}</a>
           <div className="wk-menu__socials">
             <a href="https://linkedin.com" target="_blank" rel="noreferrer" aria-label="LinkedIn"><LinkedInIcon /></a>
-            <a href="https://behance.net" target="_blank" rel="noreferrer" aria-label="Behance"><span className="wk-be">Bē</span></a>
+            <a href="https://behance.net" target="_blank" rel="noreferrer" aria-label="Behance"><BehanceIcon /></a>
             <a href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><InstagramIcon /></a>
           </div>
         </div>
@@ -745,7 +746,9 @@ export default function WorkPage() {
             <div className="wk-footer__cta">
               <span className="wk-footer__avatar">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={content.about?.face || "/images/face.png"} alt={footer.name} />
+                <img className="wk-footer__face" src={content.about?.face || "/images/face.png"} alt={footer.name} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="wk-footer__face wk-footer__face--hover" src={content.about?.faceHover || content.about?.face || "/images/face.png"} alt="" aria-hidden="true" />
               </span>
               <a className="wk-hello" href={footer.whatsappUrl} target="_blank" rel="noreferrer">
                 <span className="wk-hello__text">{footer.sayHelloLabel}</span>
@@ -771,7 +774,7 @@ export default function WorkPage() {
               <div className="wk-footer__icons">
                 <a className="wk-ic" href="https://chatgpt.com/?q=Seam%20Rahman%20UI%20UX" target="_blank" rel="noreferrer" aria-label="Ask ChatGPT about Seam Rahman"><OpenAIIcon /></a>
                 <a className="wk-ic" href="https://grok.com/?q=Seam%20Rahman%20UI%20UX" target="_blank" rel="noreferrer" aria-label="Ask Grok about Seam Rahman"><GrokIcon /></a>
-                <a className="wk-ic" href="https://gemini.google.com/app" target="_blank" rel="noreferrer" aria-label="Ask Gemini about Seam Rahman"><GeminiIcon /></a>
+                <a className="wk-ic" href="https://www.perplexity.ai/search/new?q=Seam%20Rahman%20UI%20UX" target="_blank" rel="noreferrer" aria-label="Ask Perplexity about Seam Rahman"><PerplexityIcon /></a>
               </div>
             </div>
 
@@ -781,7 +784,7 @@ export default function WorkPage() {
               <p className="wk-footer__cap">Follow me on social media</p>
               <div className="wk-footer__icons">
                 <a className="wk-ic" href="https://linkedin.com" target="_blank" rel="noreferrer" aria-label="LinkedIn"><LinkedInIcon /></a>
-                <a className="wk-ic" href="https://behance.net" target="_blank" rel="noreferrer" aria-label="Behance"><span className="wk-be">Bē</span></a>
+                <a className="wk-ic" href="https://behance.net" target="_blank" rel="noreferrer" aria-label="Behance"><BehanceIcon /></a>
                 <a className="wk-ic" href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><InstagramIcon /></a>
               </div>
             </div>
@@ -1211,11 +1214,6 @@ export default function WorkPage() {
           color: #000;
           transform: translateY(-2px);
         }
-        .wk-be {
-          font-size: 15px;
-          font-weight: 600;
-          line-height: 1;
-        }
 
         /* ---------- Footer ---------- */
         .wk-footer {
@@ -1255,18 +1253,27 @@ export default function WorkPage() {
           gap: 16px;
         }
         .wk-footer__avatar {
+          position: relative;
           width: 62px;
           height: 62px;
           flex-shrink: 0;
           border-radius: 50%;
           overflow: hidden;
-          background: #14141b;
-          border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .wk-footer__avatar img {
+        .wk-footer__avatar .wk-footer__face {
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          object-fit: contain;
+          filter: invert(1);
+        }
+        .wk-footer__avatar .wk-footer__face--hover {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          transition: opacity 350ms;
+        }
+        .wk-footer__avatar:hover .wk-footer__face--hover {
+          opacity: 1;
         }
         .wk-footer__mail {
           display: inline-block;
@@ -1283,6 +1290,7 @@ export default function WorkPage() {
           font-size: 22px;
           font-weight: 600;
           letter-spacing: -0.02em;
+          text-align: center;
           color: #fff;
         }
         .wk-footer__services ul {
