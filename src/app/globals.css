@@ -1,10 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,500&display=swap');
 @import "tailwindcss";
-
-/* Editorial serif used by the push loader's revealed name */
-.font-editorial {
-  font-family: 'Playfair Display', 'Times New Roman', Times, serif;
-}
 
 /*
   Tell Tailwind v4's base layer to use our Next.js-loaded Inter font.
@@ -28,6 +22,12 @@
   --portrait-size: calc(250 * var(--unit));
   --accent: #ff4c4e;
   --quiet: #222222;
+  /*
+    Left/right layout rails. They sit 10px outside the centred content column on
+    wide screens, and retreat into the page gutter once the column fills the
+    viewport (`max(0px, …)`) so they never cross the content at any width.
+  */
+  --rail-x: calc(max(0px, (100% - 80rem) / 2) + clamp(16px, 2.6vw, 44px) - 10px);
 }
 
 
@@ -245,6 +245,7 @@ p {
   align-items: center;
   justify-content: center;
   white-space: nowrap;
+  margin-top: calc(24 * var(--unit));
   gap: calc(10 * var(--unit));
   height: calc(44 * var(--unit));
   padding: 0 calc(20 * var(--unit));
@@ -353,21 +354,21 @@ p {
 
 .tech-title-corner-tl {
   top: calc(var(--unit));
-  left: calc(max(clamp(16px, 2.6vw, 44px) + 6px, calc((100vw - 80rem) / 2 + clamp(16px, 2.6vw, 44px) - 10px)) - calc(5.5 * var(--unit)));
+  left: calc(var(--rail-x) - calc(5.5 * var(--unit)));
 }
 
 .tech-title-corner-tr {
   top: calc(var(--unit));
-  right: calc(max(clamp(16px, 2.6vw, 44px) + 6px, calc((100vw - 80rem) / 2 + clamp(16px, 2.6vw, 44px) - 10px)) - calc(5.5 * var(--unit)));
+  right: calc(var(--rail-x) - calc(5.5 * var(--unit)));
 }
 
 .tech-title-corner-bl {
   bottom: calc(var(--unit));
-  left: calc(max(clamp(16px, 2.6vw, 44px) + 6px, calc((100vw - 80rem) / 2 + clamp(16px, 2.6vw, 44px) - 10px)) - calc(5.5 * var(--unit)));
+  left: calc(var(--rail-x) - calc(5.5 * var(--unit)));
 }
 
 .tech-title-corner-br {
-  right: calc(max(clamp(16px, 2.6vw, 44px) + 6px, calc((100vw - 80rem) / 2 + clamp(16px, 2.6vw, 44px) - 10px)) - calc(5.5 * var(--unit)));
+  right: calc(var(--rail-x) - calc(5.5 * var(--unit)));
   bottom: calc(var(--unit));
 }
 
@@ -477,6 +478,30 @@ p {
 .about {
   padding-top: calc(76 * var(--unit));
   padding-bottom: calc(72 * var(--unit));
+  /* Scroll room for the sticky pin: 100vh of held content + reveal distance. */
+  height: 260vh;
+}
+
+.about-pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (max-width: 1023px) {
+
+  /* No room to pin the stacked layout — let the section flow naturally. */
+  .about {
+    height: auto;
+  }
+
+  .about-pin {
+    position: static;
+    height: auto;
+  }
 }
 
 .about-layout {
@@ -509,6 +534,10 @@ p {
 
 .about-copy em {
   font-style: normal;
+  color: var(--accent);
+}
+
+.about-copy .accent-word {
   color: var(--accent);
 }
 
@@ -827,12 +856,12 @@ p {
 
 .page-rails::before,
 .portfolio-rail-content::before {
-  left: max(clamp(16px, 2.6vw, 44px) + 6px, calc((100% - 80rem) / 2 + clamp(16px, 2.6vw, 44px) - 10px));
+  left: var(--rail-x);
 }
 
 .page-rails::after,
 .portfolio-rail-content::after {
-  right: max(clamp(16px, 2.6vw, 44px) + 6px, calc((100% - 80rem) / 2 + clamp(16px, 2.6vw, 44px) - 10px));
+  right: var(--rail-x);
 }
 
 .featured-section,
@@ -868,11 +897,11 @@ p {
 }
 
 .featured-section::before {
-  left: max(clamp(16px, 2.6vw, 44px) + 6px, calc((100% - 80rem) / 2 + clamp(16px, 2.6vw, 44px) - 10px));
+  left: var(--rail-x);
 }
 
 .featured-section::after {
-  right: max(clamp(16px, 2.6vw, 44px) + 6px, calc((100% - 80rem) / 2 + clamp(16px, 2.6vw, 44px) - 10px));
+  right: var(--rail-x);
 }
 
 .featured-inner {
@@ -1040,7 +1069,7 @@ p {
   border-top: 1px dotted #5a5a5a;
 }
 
-.project-links button {
+.project-links a {
   display: flex;
   align-items: center;
   gap: calc(7 * var(--unit));
@@ -1051,8 +1080,17 @@ p {
   transition: color 200ms;
 }
 
-.project-links button:hover {
+.project-links a:hover {
   color: #ffffff;
+}
+
+.project-links a.is-disabled {
+  color: #6b6b6b;
+  cursor: not-allowed;
+}
+
+.project-links a.is-disabled:hover {
+  color: #6b6b6b;
 }
 
 .project-links svg {
@@ -1061,7 +1099,7 @@ p {
   transition: transform 200ms;
 }
 
-.project-links button:hover svg {
+.project-links a:not(.is-disabled):hover svg {
   transform: translate(2px, -2px);
 }
 
@@ -1278,8 +1316,17 @@ p {
 }
 
 .service-media>div {
+  position: relative;
   height: calc(144 * var(--unit));
+  overflow: hidden;
   background: #fff;
+}
+
+.service-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .service-item.is-open {
@@ -2392,7 +2439,7 @@ p {
     padding-top: 14px;
   }
 
-  .project-links button {
+  .project-links a {
     font-size: 11px;
     gap: 5px;
   }
@@ -2748,7 +2795,7 @@ p {
     margin-top: 18px;
   }
 
-  .project-links button {
+  .project-links a {
     font-size: 12px;
   }
 

@@ -36,6 +36,7 @@ export async function PUT(request: Request) {
 
   await saveContent(content as SiteContent);
   revalidatePath('/');
+  revalidatePath('/work');
   revalidatePath('/admin');
   return Response.json({ ok: true });
 }

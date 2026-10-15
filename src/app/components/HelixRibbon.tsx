@@ -1,7 +1,10 @@
-import { useEffect, useRef } from 'react';
+'use client';
+
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useSiteContent } from '../data/content-context';
 import type {
   WebGLRenderer,
   Scene,
@@ -73,17 +76,6 @@ const styles = `
     overflow: hidden;
     text-overflow: clip;
   }
-  
-  .trionn-ribbon-root .headline .sub {
-    margin-top: 6px; 
-    font-family: 'Space Mono', monospace;
-    font-size: 12px; 
-    letter-spacing: .08em; 
-    color: #888;
-    text-align: center; 
-    line-height: 1.55; 
-    max-width: 340px;
-  }
 `;
 
 /* ==================== HELPERS ==================== */
@@ -102,6 +94,14 @@ function loadScript(src: string): Promise<void> {
 
 /* ==================== COMPONENT ==================== */
 export default function TrionnRibbon() {
+  const content = useSiteContent();
+  const heading = content.latest.heading;
+  const wordA = [heading.text, heading.accent].filter(Boolean).join(' ').trim();
+  const wordB = (heading.suffix ?? '').trim();
+  const helixImages = useMemo(
+    () => (content.helix?.items ?? []).map((item) => item.image ?? ''),
+    [content],
+  );
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -445,6 +445,31 @@ export default function TrionnRibbon() {
           cards.push(m);
         }
 
+        /* ==================== ADMIN IMAGES ==================== */
+        // Cards whose image is set in /admin load a texture over the procedural
+        // artwork; the rest keep the generated fallback.
+        const loadedTextures: THREE.Texture[] = [];
+        const imageLoader = new THREE.TextureLoader();
+        imageLoader.setCrossOrigin('anonymous');
+        helixImages.slice(0, cards.length).forEach((src, k) => {
+          const url = (src ?? '').trim();
+          if (!url) return;
+          imageLoader.load(
+            url,
+            (texture) => {
+              if (cancelled) { texture.dispose(); return; }
+              texture.colorSpace = THREE.SRGBColorSpace;
+              texture.anisotropy = 8;
+              const mat = cards[k].material as ShaderMaterial;
+              mat.uniforms.map.value = texture;
+              mat.needsUpdate = true;
+              loadedTextures.push(texture);
+            },
+            undefined,
+            () => { /* keep the procedural art if the image fails to load */ },
+          );
+        });
+
         /* ==================== wrapCardOnHelix ==================== */
         const _X = new THREE.Vector3();
         const _Y = new THREE.Vector3();
@@ -551,8 +576,10 @@ export default function TrionnRibbon() {
         function updateHeadline(): void {
           const p = scrollProgress;
           const driftMax = Math.min(window.innerWidth * 0.4, 560);
-          const xA = -driftMax * 0.6 + p * driftMax * 1.6;
-          const xB = driftMax * 0.6 - p * driftMax * 1.6;
+          // Both words start centered so nothing is clipped at rest, then they
+          // drift apart as the section scrolls.
+          const xA = p * driftMax;
+          const xB = -p * driftMax;
           const yA = -p * window.innerHeight * 0.08;
           const yB = p * window.innerHeight * 0.06;
           if (wordA) wordA.style.transform = `translate3d(${xA}px, ${yA}px, 0)`;
@@ -653,6 +680,7 @@ export default function TrionnRibbon() {
             (c.material as ShaderMaterial).dispose()
           );
           projectTextures.forEach((t) => t.dispose());
+          loadedTextures.forEach((t) => t.dispose());
           if (host.contains(renderer.domElement))
             host.removeChild(renderer.domElement);
         };
@@ -669,20 +697,15 @@ export default function TrionnRibbon() {
       if (document.head.contains(linkFonts))
         document.head.removeChild(linkFonts);
     };
-  }, []);
+  }, [helixImages]);
 
   return (
     <>
       <style>{styles}</style>
       <div ref={rootRef} className="trionn-ribbon-root">
         <div className="headline">
-          <h1 className="word-a">LATEST DESIGN</h1>
-          <h1 className="word-b">WORKS</h1>
-          <p className="sub">
-            EXPLORING IDEAS THROUGH
-            <br />
-            DAILY DESIGN PRACTICE
-          </p>
+          <h1 className="word-a">{wordA}</h1>
+          {wordB ? <h1 className="word-b">{wordB}</h1> : null}
         </div>
         <div id="gl" />
       </div>

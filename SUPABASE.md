@@ -56,6 +56,9 @@ Update `.env.local` with the following values:
 | `ADMIN_NAME` | Admin display name | `Admin` |
 | `BETTER_AUTH_URL` | Base URL for the app (used for cookies / callbacks) | `https://your-domain.com` |
 | `BETTER_AUTH_SECRET` | Random secret for Better Auth sessions | `openssl rand -base64 32` |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name for admin media uploads (optional — see [CLOUDINARY.md](./CLOUDINARY.md)) | `my-cloud` |
+| `CLOUDINARY_API_KEY` | Cloudinary API key | `123456789012345` |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret | `abcdEF...` |
 
 ### Generate a `BETTER_AUTH_SECRET`
 
@@ -74,7 +77,8 @@ The first time you run the app (or run the migration script), the following tabl
 - `account` — OAuth provider linking (if used later)
 - `verification` — email verification tokens
 - `content` — site content JSON blob (key/value store)
-- `uploads` — base64-encoded uploaded images
+- `uploads` — base64-encoded uploaded images (offline fallback)
+- `media` — Cloudinary asset metadata (see [CLOUDINARY.md](./CLOUDINARY.md))
 
 **Manual SQL (optional, for verification):**
 
@@ -139,6 +143,20 @@ CREATE TABLE IF NOT EXISTS "uploads" (
   ext     TEXT NOT NULL,
   data    TEXT NOT NULL,
   created BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "media" (
+  id            TEXT PRIMARY KEY,
+  url           TEXT NOT NULL,
+  original_url  TEXT,
+  resource_type TEXT NOT NULL,
+  format        TEXT,
+  bytes         BIGINT,
+  width         INTEGER,
+  height        INTEGER,
+  duration      DOUBLE PRECISION,
+  folder        TEXT,
+  created       BIGINT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS "user_email_idx" ON "user"("email");
@@ -228,6 +246,7 @@ If you previously had a `portfolio.db` file in the repo root:
 - [ ] `BETTER_AUTH_SECRET` generated and set
 - [ ] `BETTER_AUTH_URL` set to deployed domain (or `http://localhost:3000` for local dev)
 - [ ] `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` configured
+- [ ] `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` set (for media uploads)
 - [ ] Run `npx tsx src/scripts/migrate-content.ts` to populate content
 - [ ] Run `npm run typecheck` / `npm run build` to verify no TypeScript errors
 - [ ] Deploy to Vercel/Netlify and verify the admin login works

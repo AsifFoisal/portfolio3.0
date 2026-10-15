@@ -4,19 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSiteContent } from '../data/content-context';
 import './RadialMenu.css';
 
-// Ring geometry from the Radial Concentric Navigation design, inner -> outer.
-// All rings share one startOffset (the path begins at the 9 o'clock point,
-// running counterclockwise) so every label is centered on the same lower-left
-// radial line. Fills follow the site's red accent, lightest at the hub.
-const RING_STYLES = [
-  { radius: 113, fill: '#fff5f4', fontSize: 11 },
-  { radius: 156, fill: '#ffe9e8', fontSize: 11 },
-  { radius: 200, fill: '#ffd4d6', fontSize: 11.5 },
-  { radius: 243, fill: '#ffb9bd', fontSize: 12 },
-  { radius: 286, fill: '#ff969d', fontSize: 12 },
-  { radius: 330, fill: '#ff757f', fontSize: 12.5 },
-  { radius: 375, fill: '#ff4c4e', fontSize: 13 },
-].map((ring) => ({ ...ring, offset: '12.5%' }));
+// Ring geometry from the Radial Concentric Navigation design. Rings fan out from
+// the hub between HUB_RADIUS and OUTER_RADIUS in equal-width bands; a navigation
+// with more items simply gets more (and thinner) rings. The original 7-ring
+// design comes out to the same radii when there are 7 links.
+const HUB_RADIUS = 70;
+const OUTER_RADIUS = 375;
+const RING_FILLS = ['#fff5f4', '#ffe9e8', '#ffd4d6', '#ffb9bd', '#ff969d', '#ff757f', '#ff4c4e'];
 
 // The hub circle sits at (520, 160) inside the 680x680 canvas.
 const HUB_X = 520;
@@ -26,6 +20,24 @@ function arcPath(radius: number) {
   return `M ${HUB_X},${HUB_Y} m -${radius},0 a ${radius},${radius} 0 1,0 ${radius * 2},0 a ${radius},${radius} 0 1,0 -${radius * 2},0`;
 }
 
+/** Split the radius band into `count` equal concentric rings. */
+function ringStyles(count: number) {
+  const total = Math.max(1, count);
+  const band = (OUTER_RADIUS - HUB_RADIUS) / total;
+  return Array.from({ length: total }, (_, index) => {
+    const innerEdge = HUB_RADIUS + band * index;
+    const radius = HUB_RADIUS + band * (index + 1);
+    const t = total === 1 ? 1 : index / (total - 1);
+    return {
+      radius,
+      // Labels ride the middle of each band.
+      pathRadius: (innerEdge + radius) / 2,
+      fill: RING_FILLS[Math.round(t * (RING_FILLS.length - 1))],
+      fontSize: 11 + t * 2,
+    };
+  });
+}
+
 type RadialMenuProps = {
   onClose: () => void;
   onNavigate: (href: string) => void;
@@ -33,10 +45,10 @@ type RadialMenuProps = {
 
 export default function RadialMenu({ onClose, onNavigate }: RadialMenuProps) {
   const content = useSiteContent();
-  const rings = useMemo(() => content.navigation.map((link, index) => {
-    const style = RING_STYLES[index] ?? RING_STYLES[RING_STYLES.length - 1];
-    return { ...link, ...style, pathRadius: style.radius - 22 };
-  }), [content.navigation]);
+  const rings = useMemo(() => {
+    const styles = ringStyles(content.navigation.length);
+    return content.navigation.map((link, index) => ({ ...link, ...styles[index] }));
+  }, [content.navigation]);
 
   const [open, setOpen] = useState(false);
   const closingRef = useRef(false);
@@ -64,6 +76,18 @@ export default function RadialMenu({ onClose, onNavigate }: RadialMenuProps) {
       cancelAnimationFrame(raf);
       document.removeEventListener('keydown', onKeyDown);
     };
+  }, [requestClose]);
+
+  // Click anywhere that is not a ring (the page behind, or the empty space the
+  // menu occupies) to dismiss it.
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (target?.closest('.ring-group')) return;
+      requestClose();
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [requestClose]);
 
   return (
@@ -94,7 +118,7 @@ export default function RadialMenu({ onClose, onNavigate }: RadialMenuProps) {
           >
             <circle cx={HUB_X} cy={HUB_Y} r={ring.radius} fill={ring.fill} filter="url(#ring-shadow)" className="ring-path" />
             <text className="ring-text" fontSize={ring.fontSize}>
-              <textPath href={`#radial-path-${rings.length - 1 - reverseIndex}`} startOffset={ring.offset} textAnchor="middle">
+              <textPath href={`#radial-path-${rings.length - 1 - reverseIndex}`} startOffset="12.5%" textAnchor="middle">
                 {ring.label.toUpperCase()}
               </textPath>
             </text>
@@ -102,7 +126,7 @@ export default function RadialMenu({ onClose, onNavigate }: RadialMenuProps) {
         ))}
 
         <g className="ring-group" onClick={() => requestClose()}>
-          <circle cx={HUB_X} cy={HUB_Y} r="70" fill="#fdf4f3" filter="url(#ring-shadow)" className="ring-path" />
+          <circle cx={HUB_X} cy={HUB_Y} r={HUB_RADIUS} fill="#fdf4f3" filter="url(#ring-shadow)" className="ring-path" />
           <g transform="translate(490, 132)" className="cursor-pointer">
             <rect x="0" y="0" width="30" height="5.5" rx="2.75" fill="#323b44" />
             <rect x="0" y="11" width="42" height="5.5" rx="2.75" fill="#323b44" />

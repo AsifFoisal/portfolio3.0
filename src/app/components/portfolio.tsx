@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type RefObject } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, animate, useInView, useMotionTemplate, useMotionValueEvent, useMotionValue, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react';
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
@@ -27,7 +28,6 @@ import PushLoader from './PushLoader';
 type Overlay =
   | { kind: 'menu' }
   | { kind: 'contact'; intent: 'project' | 'call' }
-  | { kind: 'project'; index: number; mode: 'live' | 'design' }
   | { kind: 'gallery'; index: number }
   | null;
 
@@ -125,7 +125,7 @@ function VideoPoster({ rounded = false, expandOnScroll = false }: { rounded?: bo
   );
 }
 
-function AboutParagraph() {
+function AboutParagraph({ targetRef }: { targetRef: RefObject<HTMLElement | null> }) {
   const content = useSiteContent();
   const segments = content.about.segments;
 
@@ -144,8 +144,10 @@ function AboutParagraph() {
     return list;
   }, [segments]);
 
+  /** Words go from dimmed to full opacity one by one as the section scrolls
+   *  through its pinned range, finishing right as the pin releases. */
   const ref = useRef<HTMLParagraphElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.9', 'end 0.45'] });
+  const { scrollYProgress } = useScroll({ target: targetRef, offset: ['start 0.75', 'end end'] });
   const [visibleCount, setVisibleCount] = useState(0);
   useMotionValueEvent(scrollYProgress, 'change', (value) => {
     setVisibleCount(Math.ceil(value * words.length));
@@ -154,7 +156,7 @@ function AboutParagraph() {
   return (
     <p ref={ref}>
       {words.map((item, index) => (
-        <span key={index} className={cn(item.accent && 'accent-word')} style={{ color: index < visibleCount ? undefined : 'rgba(26,26,26,0.24)', transition: 'color 300ms' }}>
+        <span key={index} className={cn(item.accent && 'accent-word')} style={{ color: index < visibleCount ? undefined : 'rgba(26,26,26,0.24)', transition: 'color 600ms' }}>
           {item.word}
           {item.spaceAfter ? ' ' : null}
         </span>
@@ -188,12 +190,35 @@ function FeaturedHeading() {
   return (
     <div className="featured-heading">
       <div><p className="eyebrow">{featured.eyebrow} <TurnArrowIcon /></p><h2 id="featured-title"><SectionHeading heading={featured.heading} /></h2></div>
-      <a className="view-all" href="#latest-works">{featured.viewAllLabel} <ArrowIcon /></a>
+      <Link className="view-all" href="/work" scroll={false}>{featured.viewAllLabel} <ArrowIcon /></Link>
     </div>
   );
 }
 
-function ProjectCaption({ project, onOpen }: { project: Project; onOpen: (mode: 'live' | 'design') => void }) {
+/** Normalise admin-entered links so bare domains like "www.google.com" open off-site. */
+function toExternalHref(value: string) {
+  const url = (value ?? '').trim();
+  if (!url) return '';
+  if (url.startsWith('/') || url.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(url)) return url;
+  return `https://${url}`;
+}
+
+function ProjectLink({ label, href }: { label: string; href: string }) {
+  const url = toExternalHref(href);
+  return (
+    <a
+      className={`project-link${url ? '' : ' is-disabled'}`}
+      href={url || undefined}
+      target={url ? '_blank' : undefined}
+      rel={url ? 'noreferrer' : undefined}
+      aria-disabled={url ? undefined : true}
+    >
+      {label} <ArrowIcon />
+    </a>
+  );
+}
+
+function ProjectCaption({ project }: { project: Project }) {
   const content = useSiteContent();
   const featured = content.featured;
   return (
@@ -201,8 +226,8 @@ function ProjectCaption({ project, onOpen }: { project: Project; onOpen: (mode: 
       <h3>{project.title}</h3>
       <p>{project.description}<br className="wide-break" /></p>
       <div className="project-links">
-        <button onClick={() => onOpen('live')}>{featured.liveLinkLabel} <ArrowIcon /></button>
-        <button onClick={() => onOpen('design')}>{featured.figmaLinkLabel} <ArrowIcon /></button>
+        <ProjectLink label={featured.liveLinkLabel} href={project.liveUrl} />
+        <ProjectLink label={featured.figmaLinkLabel} href={project.figmaUrl} />
       </div>
     </div>
   );
@@ -240,7 +265,10 @@ function ServiceCard({ service, index, isOpen, onToggle }: { service: Service; i
       <div className="service-panel" id={`service-panel-${index}`} role="region" aria-labelledby={`service-toggle-${index}`} inert={!isOpen}>
         <div className="service-panel-clip"><div className="service-details">
           <div className="service-description"><p>{service.description}</p><div className="service-tags">{service.tags.map((tag, tagIndex) => <span key={`${tag}-${tagIndex}`}>{tag}</span>)}</div></div>
-          <div className="service-media" aria-hidden="true"><div /><div /></div>
+          <div className="service-media" aria-hidden="true">
+            <div>{service.imageLeft && <Image src={service.imageLeft} alt="" width={720} height={540} sizes="(max-width: 800px) 45vw, 320px" loading="lazy" />}</div>
+            <div>{service.imageRight && <Image src={service.imageRight} alt="" width={720} height={540} sizes="(max-width: 800px) 45vw, 320px" loading="lazy" />}</div>
+          </div>
         </div></div>
       </div>
     </article>
@@ -254,7 +282,7 @@ function ServiceCard({ service, index, isOpen, onToggle }: { service: Service; i
  * center; the number slides in right-to-left, the text top-to-bottom.
  * Mobile keeps the classic per-row layout with a static heading.
  */
-function FeaturedWorks({ onOpen }: { onOpen: (index: number, mode: 'live' | 'design') => void }) {
+function FeaturedWorks() {
   const content = useSiteContent();
   const projects = content.featured.projects;
   const cardsRef = useRef<HTMLDivElement>(null);
@@ -282,19 +310,19 @@ function FeaturedWorks({ onOpen }: { onOpen: (index: number, mode: 'live' | 'des
           </span>
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.div key={active} className="featured-panel-caption" initial={{ y: -44, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 44, opacity: 0 }} transition={slideTransition}>
-              {activeProject && <ProjectCaption project={activeProject} onOpen={(mode) => onOpen(active, mode)} />}
+              {activeProject && <ProjectCaption project={activeProject} />}
             </motion.div>
           </AnimatePresence>
         </aside>
         <div className="featured-cards" ref={cardsRef}>
           {projects.map((project, index) => (
             <article className="featured-card" key={`${project.title}-${index}`}>
-              <button className="project-image-button" onClick={() => onOpen(index, 'live')} aria-label={`View ${project.title} project ${index + 1}`}>
+              <div className="project-image-button">
                 <Image src={project.image} alt={project.title} width={1024} height={1024} loading="lazy" />
-              </button>
+              </div>
               <div className="project-info featured-card-info">
                 <span className="project-number">0{index + 1}</span>
-                <ProjectCaption project={project} onOpen={(mode) => onOpen(index, mode)} />
+                <ProjectCaption project={project} />
               </div>
             </article>
           ))}
@@ -462,16 +490,13 @@ function Testimonials() {
 }
 
 export default function Portfolio({ content }: { content: SiteContent }) {
+  const router = useRouter();
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [openService, setOpenService] = useState<number | null>(0);
   const [loading, setLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
   const lenisRef = useRef<Lenis | null>(null);
+  const aboutRef = useRef<HTMLElement>(null);
   const closeOverlay = useCallback(() => setOverlay(null), []);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -486,8 +511,11 @@ export default function Portfolio({ content }: { content: SiteContent }) {
   }, []);
 
   const hasOverlay = overlay !== null;
+  // The radial menu floats over the page rather than dimming it, so it leaves
+  // scrolling alone; only the true dialogs lock the page.
+  const locksScroll = hasOverlay && overlay.kind !== 'menu';
   useEffect(() => {
-    if (!hasOverlay) return;
+    if (!locksScroll) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     lenisRef.current?.stop();
@@ -495,10 +523,14 @@ export default function Portfolio({ content }: { content: SiteContent }) {
       document.body.style.overflow = previousOverflow;
       lenisRef.current?.start();
     };
-  }, [hasOverlay]);
+  }, [locksScroll]);
 
   function navigateTo(href: string) {
     setOverlay(null);
+    if (href.startsWith('/')) {
+      router.push(href);
+      return;
+    }
     window.requestAnimationFrame(() => {
       lenisRef.current?.start();
       if (lenisRef.current) lenisRef.current.scrollTo(href, { offset: -32, duration: 1.3 });
@@ -507,17 +539,14 @@ export default function Portfolio({ content }: { content: SiteContent }) {
     });
   }
 
-  const featured = content.featured;
-  const activeProject = overlay?.kind === 'project' ? featured.projects[overlay.index] : null;
   const galleryItem = overlay?.kind === 'gallery' ? content.latest.items[overlay.index] : null;
 
   return (
     <ContentProvider content={content}>
-      {mounted && loading && createPortal(
+      {loading && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2147483000 }}>
           <PushLoader onFinish={() => setLoading(false)} />
-        </div>,
-        document.body
+        </div>
       )}
       <a className="skip-link" href="#main">Skip to content</a>
       <div className="portfolio-rail-content">
@@ -568,12 +597,13 @@ export default function Portfolio({ content }: { content: SiteContent }) {
           <VideoPoster rounded expandOnScroll />
         </section>
 
-        <section className="about page-width" id="about" aria-labelledby="about-title">
+        <section className="about page-width" id="about" ref={aboutRef} aria-labelledby="about-title">
+          <div className="about-pin">
           <h2 className="section-title low-contrast-heading" id="about-title"><SectionHeading heading={content.about.heading} /></h2>
           <div className="about-layout">
             <div className="about-media"><FlyingPosters items={content.about.posters} planeWidth={content.about.planeWidth} planeHeight={content.about.planeHeight} distortion={3} /></div>
             <div className="about-copy">
-              <AboutParagraph />
+              <AboutParagraph targetRef={aboutRef} />
               <div className="about-stats">
                 {content.about.stats.map((stat) => (
                   <div key={stat.label}>
@@ -588,10 +618,11 @@ export default function Portfolio({ content }: { content: SiteContent }) {
               </div>
             </div>
           </div>
+          </div>
         </section>
 
         <section className="featured-section" id="projects" aria-labelledby="featured-title">
-          <FeaturedWorks onOpen={(index, mode) => setOverlay({ kind: 'project', index, mode })} />
+          <FeaturedWorks />
         </section>
 
         <div className="page-width side-rails services-and-stories">
@@ -621,7 +652,6 @@ export default function Portfolio({ content }: { content: SiteContent }) {
               preset="cylinder"
               intro="rise"
               cardWidth={220}
-              aspectRatio={1}
               speed={14}
               captions
               fadeColor="#000000"
@@ -660,15 +690,6 @@ export default function Portfolio({ content }: { content: SiteContent }) {
 
       {overlay?.kind === 'menu' && <RadialMenu onClose={closeOverlay} onNavigate={navigateTo} />}
       {overlay?.kind === 'contact' && <Dialog label={overlay.intent === 'call' ? 'Book a discovery call' : 'Contact Seam Rahman'} className="contact-dialog" onClose={closeOverlay}><ContactForm intent={overlay.intent} /></Dialog>}
-      {overlay?.kind === 'project' && activeProject && <Dialog label={`${activeProject.title} project ${overlay.index + 1}`} className="project-dialog" onClose={closeOverlay}>
-        <div className="project-dialog-content"><Image className="project-dialog-image" src={activeProject.image} alt={activeProject.title} width={1024} height={1024} />
-          <div className="project-dialog-copy"><p className="dialog-eyebrow">{featured.dialogEyebrowPrefix} 0{overlay.index + 1} / {overlay.mode === 'design' ? 'DESIGN PREVIEW' : 'PROJECT PREVIEW'}</p><h2>{activeProject.title}</h2><p>{activeProject.dialogIntro}</p>
-            <dl><div><dt>Focus</dt><dd>{activeProject.focus}</dd></div><div><dt>Discipline</dt><dd>{activeProject.discipline}</dd></div><div><dt>Palette</dt><dd><span className="palette-dot palette-orange" /><span className="palette-dot palette-peach" /><span className="palette-dot palette-black" /></dd></div></dl>
-            {overlay.mode === 'design' && <p className="preview-note">The original Figma file was not included with the reference. You can explore the design artwork here.</p>}
-            <a className="outline-button" href={activeProject.image} download={`${activeProject.title.toLowerCase().replace(/\s+/g, '-')}-design.jpg`}>{featured.dialogDownloadLabel} <ArrowIcon /></a><a className="text-button portfolio-link" href={featured.behanceUrl} target="_blank" rel="noreferrer">{featured.behanceLabel} <ArrowIcon /></a>
-          </div>
-        </div>
-      </Dialog>}
       {overlay?.kind === 'gallery' && galleryItem && <Dialog label={`${galleryItem.title} design`} className="gallery-dialog" onClose={closeOverlay}>
         <div className="gallery-dialog-content"><Image src={galleryItem.src} alt={galleryItem.alt} width={1024} height={1024} /><div className="gallery-dialog-footer"><div><p className="dialog-eyebrow">LATEST DESIGN WORK / 0{overlay.index + 1}</p><h2>{galleryItem.title}</h2></div><a className="outline-button" href={galleryItem.src} download={`${galleryItem.title.toLowerCase().replace(/\s+/g, '-')}.jpg`}>Download design <ArrowIcon /></a></div></div>
       </Dialog>}

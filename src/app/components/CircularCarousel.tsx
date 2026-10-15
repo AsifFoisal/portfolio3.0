@@ -96,6 +96,61 @@ const TO_RAD = Math.PI / 180;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const wrap = (degrees: number) => ((((degrees + 180) % 360) + 360) % 360) - 180;
+
+/**
+ * Even spacing on the ring: cards are placed centre-to-centre by
+ * `w_i/2 + gap + w_{i+1}/2`, so every neighbouring pair keeps the same
+ * edge-to-edge gap whether it is wide landscape or a square.
+ */
+const cumulativeAngles = (widths: number[], gap: number): number[] => {
+  const n = widths.length;
+  if (!n) return [];
+  const total = widths.reduce((sum, width) => sum + width + gap, 0) || 1;
+  const angles: number[] = [];
+  let acc = 0;
+  for (let i = 0; i < n; i++) {
+    angles.push((acc / total) * 360);
+    acc += widths[i] / 2 + gap + widths[(i + 1) % n] / 2;
+  }
+  return angles;
+};
+
+/** The snap angle (a `state.angle` value) for the card nearest to `angle`. */
+const nearestCard = (angle: number, angles: number[]): number => {
+  let best = angle;
+  let bestDist = Infinity;
+  for (const a of angles) {
+    const candidate = -a + 360 * Math.round((angle + a) / 360);
+    const dist = Math.abs(candidate - angle);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = candidate;
+    }
+  }
+  return best;
+};
+
+/** The index of the card currently facing the viewer. */
+const cardIndexAt = (angle: number, angles: number[]): number => {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let index = 0; index < angles.length; index++) {
+    const dist = Math.abs(wrap(angles[index] + angle));
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = index;
+    }
+  }
+  return best;
+};
+
+/** The snap angle for a card index, chosen nearest to `from` so motion stays smooth. */
+const cardAngleFor = (index: number, from: number, angles: number[]): number => {
+  const n = angles.length || 1;
+  const base = -angles[((index % n) + n) % n];
+  return base + 360 * Math.round((from - base) / 360);
+};
+
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);
 const easeOutQuint = (t: number) => 1 - Math.pow(1 - t, 5);
 
@@ -179,6 +234,7 @@ type CarouselState = {
 type CarouselSettings = {
   count: number;
   step: number;
+  angles: number[];
   radius: number;
   layout: PresetShape;
   axis: 'x' | 'y';
@@ -206,6 +262,7 @@ type CircularCarouselProps = {
   preset?: PresetName;
   intro?: 'assemble' | 'rise' | 'spin' | 'none';
   cardWidth?: number;
+  /** Card aspect (width / height). When omitted, cards adapt to the images' natural aspect. */
   aspectRatio?: number;
   gap?: number;
   curve?: number;
@@ -238,7 +295,7 @@ const CircularCarousel = ({
   preset = 'cylinder',
   intro = 'rise',
   cardWidth = 220,
-  aspectRatio = 1,
+  aspectRatio,
   gap = 25,
   curve,
   tilt,
@@ -272,10 +329,23 @@ const CircularCarousel = ({
   const tiltValue = tilt ?? layout.tilt;
   const curveValue = layout.billboard ? 0 : clamp(curve ?? layout.curve, 0, 1);
   const reduced = usePrefersReducedMotion();
+  const [measuredRatio, setMeasuredRatio] = useState<number | null>(null);
+  const [ratios, setRatios] = useState<(number | null)[]>([]);
 
-  const cardW = Math.max(40, cardWidth);
-  const cardH = cardW / clamp(aspectRatio, 0.2, 5);
-  const along = axis === 'x' ? cardH : cardW;
+  // Every card shares one height so they line up; each card's width follows its
+  // own image aspect, so a landscape upload gets a wider card instead of a
+  // cropped one. `aspectRatio` forces one uniform ratio, and the measured
+  // median is the fallback until an image has been measured.
+  const cardH = Math.max(40, cardWidth);
+  const ratioFor = (index: number) => clamp(aspectRatio ?? ratios[index] ?? measuredRatio ?? 1, 0.2, 5);
+  const widths = list.map((_, index) => Math.round(cardH * ratioFor(index) * 100) / 100);
+  // Fit reserves room for the widest card so nothing overflows...
+  const cardW = Math.max(1, ...widths);
+  // ...while the ring itself is spaced by each card's own width, so gaps stay
+  // even (no big gaps beside wide cards, no overlap either).
+  const pitchWidth = widths.reduce((sum, w) => sum + w, 0) / Math.max(1, widths.length);
+  const along = axis === 'x' ? cardH : Math.max(1, pitchWidth);
+  const angles = cumulativeAngles(axis === 'x' ? widths.map(() => cardH) : widths, gap);
   const step = 360 / count;
 
   const radius = useMemo(() => {
@@ -286,14 +356,16 @@ const CircularCarousel = ({
     return Math.max(chord + (arc - chord) * curveValue, along * 0.6);
   }, [count, along, gap, curveValue, layout.spread]);
 
-  const tiles = useMemo(() => {
+  // Cards can be different widths, so each card's curved tiles are measured
+  // from that card's own length rather than one shared value.
+  const tilesFor = (cardLength: number) => {
     const total = curveValue > 0.001 ? TILES : 1;
-    const length = along / total;
+    const length = cardLength / total;
     const bend = curveValue > 0.001 ? radius / curveValue : 0;
     return Array.from({ length: total }, (_, index) => {
       const start = index * length - (index > 0 ? OVERLAP / 2 : 0);
       const end = (index + 1) * length + (index < total - 1 ? OVERLAP / 2 : 0);
-      const center = (start + end) / 2 - along / 2;
+      const center = (start + end) / 2 - cardLength / 2;
       const alpha = bend ? center / bend : 0;
       const shift = bend ? bend * Math.sin(alpha) : center;
       const sink = bend ? bend * (1 - Math.cos(alpha)) : 0;
@@ -305,7 +377,7 @@ const CircularCarousel = ({
           : `translate3d(${shift}px, 0px, ${depth}px) rotateY(${turn}deg)`;
       return { index, total, start, end, size: end - start, move };
     });
-  }, [along, axis, curveValue, layout.inward, radius]);
+  };
 
   const rootRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -346,6 +418,7 @@ const CircularCarousel = ({
   const settings: CarouselSettings = {
     count,
     step,
+    angles,
     radius,
     layout,
     axis,
@@ -373,6 +446,10 @@ const CircularCarousel = ({
 
   useEffect(() => {
     settingsRef.current = settings;
+    // The animation loop sleeps while idle, so changing layout inputs (e.g. the
+    // images finish measuring and card widths change) would otherwise leave the
+    // ring drawn at the old positions. Wake it so it repaints with the new ones.
+    wakeRef.current();
   });
 
   useEffect(() => {
@@ -396,17 +473,40 @@ const CircularCarousel = ({
   useEffect(() => {
     let cancelled = false;
     queueMicrotask(() => setReady(false));
-    const sources = sourcesKey.split('|').slice(0, 12);
+    const sources = sourcesKey ? sourcesKey.split('|') : [];
+    // Keep every probe image referenced until it settles: an unreferenced
+    // `new Image()` can be garbage-collected before `load` fires, which would
+    // stall the measurement (and force every card back to a square ratio).
+    const probes: HTMLImageElement[] = [];
     const load = (src: string) =>
-      new Promise<void>((resolve) => {
+      new Promise<number | null>((resolve) => {
         const image = new Image();
+        probes.push(image);
         image.decoding = 'async';
-        image.onload = () => (image.decode ? image.decode().then(resolve, resolve) : resolve());
-        image.onerror = () => resolve();
+        let settled = false;
+        const ratio = () =>
+          image.naturalWidth && image.naturalHeight ? image.naturalWidth / image.naturalHeight : null;
+        const settle = () => {
+          if (settled) return;
+          settled = true;
+          resolve(ratio());
+        };
+        image.onload = settle;
+        image.onerror = settle;
         image.src = src;
+        // Cached images are already complete before `load` is dispatched.
+        if (image.complete) settle();
+        // Never let one slow or blocked image stall the whole carousel.
+        setTimeout(settle, 4000);
       });
+    const measured = Promise.all(sources.map(load)).then((measuredRatios) => {
+      if (cancelled) return;
+      setRatios(measuredRatios);
+      const valid = measuredRatios.filter((r): r is number => r !== null && Number.isFinite(r) && r > 0).sort((a, b) => a - b);
+      if (valid.length) setMeasuredRatio(valid[Math.floor(valid.length / 2)]);
+    });
     const timeout = new Promise<void>((resolve) => setTimeout(resolve, 2400));
-    Promise.race([Promise.all(sources.map(load)), timeout]).then(() => {
+    Promise.race([measured, timeout]).then(() => {
       if (cancelled) return;
       const state = stateRef.current;
       state.introDone = false;
@@ -416,6 +516,7 @@ const CircularCarousel = ({
     });
     return () => {
       cancelled = true;
+      probes.length = 0;
     };
   }, [sourcesKey]);
 
@@ -429,7 +530,7 @@ const CircularCarousel = ({
     let raf = 0;
     let visible = true;
 
-    const nearest = (angle: number) => Math.round(angle / settingsRef.current.step) * settingsRef.current.step;
+    const nearest = (angle: number) => nearestCard(angle, settingsRef.current.angles);
 
     const measure = () => {
       const s = settingsRef.current;
@@ -560,7 +661,7 @@ const CircularCarousel = ({
       if (s.autoplay === 'step' && !paused && !state.intro && state.introDone) {
         if (!state.stepAt) state.stepAt = now + s.interval * 1000;
         if (now >= state.stepAt) {
-          state.target = (state.target ?? nearest(state.angle)) + s.step * state.dir;
+          state.target = cardAngleFor(cardIndexAt(state.target ?? state.angle, s.angles) + state.dir, state.angle, s.angles);
           state.stepAt = now + s.interval * 1000;
         }
         busy = true;
@@ -608,7 +709,7 @@ const CircularCarousel = ({
       for (let index = 0; index < s.count; index++) {
         const card = cardRefs.current[index];
         if (!card) continue;
-        const base = index * s.step;
+        const base = s.angles[index];
         const mod = introCard(elapsed, base);
         const r = R * mod.radius;
         let transform: string;
@@ -630,7 +731,7 @@ const CircularCarousel = ({
         card.style.setProperty('--cc-depth', fade.toFixed(3));
       }
 
-      const index = ((Math.round(-state.angle / s.step) % s.count) + s.count) % s.count || 0;
+      const index = cardIndexAt(state.angle, s.angles);
       if (index !== activeRef.current) {
         activeRef.current = index;
         setActive(index);
@@ -692,7 +793,7 @@ const CircularCarousel = ({
       state.holdUntil = performance.now() + 1600;
       clearTimeout(state.wheelTimer);
       state.wheelTimer = setTimeout(() => {
-        if (settingsRef.current.snap) state.target = nearest(state.angle + state.velocity * 0.12);
+        if (settingsRef.current.snap) state.target = nearestCard(state.angle + state.velocity * 0.12, settingsRef.current.angles);
         wake();
       }, 140);
       wake();
@@ -726,9 +827,7 @@ const CircularCarousel = ({
   const focusIndex = useCallback((index: number) => {
     const state = stateRef.current;
     const s = settingsRef.current;
-    let target = -index * s.step;
-    target += 360 * Math.round((state.angle - target) / 360);
-    state.target = target;
+    state.target = cardAngleFor(index, state.angle, s.angles);
     state.holdUntil = performance.now() + 2800;
     wakeRef.current();
   }, []);
@@ -736,8 +835,9 @@ const CircularCarousel = ({
   const stepBy = useCallback((delta: number) => {
     const state = stateRef.current;
     const s = settingsRef.current;
-    const base = state.target ?? Math.round(state.angle / s.step) * s.step;
-    state.target = base - delta * s.step * (s.layout.inward ? -1 : 1);
+    const from = state.target ?? state.angle;
+    const current = cardIndexAt(from, s.angles);
+    state.target = cardAngleFor(current + delta * (s.layout.inward ? -1 : 1), state.angle, s.angles);
     state.holdUntil = performance.now() + 2800;
     wakeRef.current();
   }, []);
@@ -824,7 +924,7 @@ const CircularCarousel = ({
     const coasting = s.autoplay === 'drift' && !(s.pauseOnHover && state.hover && event.pointerType === 'mouse');
     if (s.snap && !coasting) {
       const tau = 0.18 + s.momentum * 1.5;
-      state.target = Math.round((state.angle + velocity * tau * 0.55) / s.step) * s.step;
+      state.target = nearestCard(state.angle + velocity * tau * 0.55, s.angles);
     }
     wakeRef.current();
   };
@@ -873,7 +973,13 @@ const CircularCarousel = ({
   const current = list[active] || list[0];
   const label = current ? current.title || current.alt || `Image ${active + 1}` : '';
 
-  const renderTile = (item: CircularCarouselItem, tile: { index: number; total: number; start: number; end: number; size: number; move: string }, back: boolean) => {
+  // One model per card: its own width, and the tiles that bend that width.
+  const cardModels = list.map((item, index) => {
+    const width = widths[index];
+    return { item, index, width, cardTiles: tilesFor(width) };
+  });
+
+  const renderTile = (item: CircularCarouselItem, tile: { index: number; total: number; start: number; end: number; size: number; move: string }, back: boolean, cardWidth: number, cardHeight: number) => {
     const strip = back ? tile.total - 1 - tile.index : tile.index;
     const first = strip === 0;
     const last = strip === tile.total - 1;
@@ -886,12 +992,12 @@ const CircularCarousel = ({
     const size = tile.size;
     const box =
       axis === 'x'
-        ? { left: -cardW / 2, top: -size / 2, width: cardW, height: size }
-        : { left: -size / 2, top: -cardH / 2, width: size, height: cardH };
+        ? { left: -cardWidth / 2, top: -size / 2, width: cardWidth, height: size }
+        : { left: -size / 2, top: -cardHeight / 2, width: size, height: cardHeight };
     const photoStyle =
       axis === 'x'
-        ? { left: 0, top: -offset, width: cardW, height: cardH }
-        : { left: -offset, top: 0, width: cardW, height: cardH };
+        ? { left: 0, top: -offset, width: cardWidth, height: cardHeight }
+        : { left: -offset, top: 0, width: cardWidth, height: cardHeight };
     const flip = axis === 'x' ? ' rotateX(180deg)' : ' rotateY(180deg)';
     return (
       <div
@@ -902,7 +1008,7 @@ const CircularCarousel = ({
       >
         <div
           className="circular-carousel__frame"
-          style={{ height: axis === 'x' ? size : cardH, borderRadius: frameRadius }}
+          style={{ height: axis === 'x' ? size : cardHeight, borderRadius: frameRadius }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -954,7 +1060,7 @@ const CircularCarousel = ({
         <div ref={stageRef} className="circular-carousel__stage">
           <div ref={cameraRef} className="circular-carousel__camera">
             <div ref={ringRef} className="circular-carousel__ring">
-              {list.map((item, index) => (
+              {cardModels.map(({ item, index, width, cardTiles }) => (
                 <div
                   key={index}
                   ref={(element) => {
@@ -967,8 +1073,8 @@ const CircularCarousel = ({
                   aria-label={`${item.title || item.alt || `Image ${index + 1}`}, ${index + 1} of ${count}`}
                 >
                   <div className="circular-carousel__body">
-                    {tiles.map((tile) => renderTile(item, tile, false))}
-                    {layout.backfaces && tiles.map((tile) => renderTile(item, tile, true))}
+                    {cardTiles.map((tile) => renderTile(item, tile, false, width, cardH))}
+                    {layout.backfaces && cardTiles.map((tile) => renderTile(item, tile, true, width, cardH))}
                   </div>
                 </div>
               ))}

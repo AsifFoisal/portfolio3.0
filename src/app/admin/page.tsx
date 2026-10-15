@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import AdminApp from './AdminApp';
+import { ToastProvider } from './Toaster';
 import { getContent } from '../data/content-store';
 import { getAdminSession } from '@/lib/session';
 
@@ -14,5 +15,9 @@ export default async function AdminPage() {
   if (!session) redirect('/admin/login');
 
   const content = await getContent();
-  return <AdminApp initialContent={content} />;
+  return (
+    <ToastProvider>
+      <AdminApp initialContent={content} />
+    </ToastProvider>
+  );
 }

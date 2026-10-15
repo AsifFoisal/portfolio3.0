@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { motion, useAnimationFrame, useMotionValue, useSpring } from 'motion/react';
 import { useSiteContent } from '../data/content-context';
 import { InstagramIcon, WhatsApp3DIcon, WhatsAppIcon } from './Icons';
@@ -230,9 +231,9 @@ export default function SiteFooter() {
                 </div>
 
                 <div>
-                  <a href="#projects" className="footer-projects-button">
+                  <Link href="/work" scroll={false} className="footer-projects-button">
                     View all projects
-                  </a>
+                  </Link>
                 </div>
 
                 <div className="space-y-3 pt-1">

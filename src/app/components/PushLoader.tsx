@@ -195,16 +195,16 @@ export default function PushLoader({ onFinish }: { onFinish: () => void }) {
       {/* ——— Revealed layer: the name, waiting under the black ——— */}
       <div className="absolute inset-0 flex items-center justify-center bg-white">
         <h1
-          className="font-editorial text-center font-medium text-[#FF4949] select-none"
+          className="font-display text-center font-medium text-[#FF4949] select-none"
           style={{
             fontSize: "clamp(4.6rem, 13.5vw, 12.5rem)",
             lineHeight: 0.94,
             letterSpacing: "-0.015em",
           }}
         >
-          HUY
+          SEAM
           <br />
-          PHAN
+          RAHMAN
         </h1>
       </div>
 

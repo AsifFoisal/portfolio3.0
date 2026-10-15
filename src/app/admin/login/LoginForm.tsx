@@ -1,25 +1,26 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
+import { useToast } from '../Toaster';
 import '../admin.css';
 
 export default function LoginForm() {
   const router = useRouter();
+  const toast = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError('');
     setPending(true);
     const result = await authClient.signIn.email({ email, password });
     setPending(false);
     if (result.error) {
-      setError(result.error.message ?? 'Login failed. Check your credentials.');
+      toast.error(result.error.message ?? 'Login failed. Check your credentials.');
       return;
     }
     router.push('/admin');
@@ -39,11 +40,10 @@ export default function LoginForm() {
           Password
           <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
         </label>
-        {error && <p className="admin-error" role="alert">{error}</p>}
         <button className="admin-solid-button" type="submit" disabled={pending}>
           {pending ? 'Signing in…' : 'Sign in'}
         </button>
-        <a className="admin-back-link" href="/">← Back to site</a>
+        <Link className="admin-back-link" href="/">← Back to site</Link>
       </form>
     </div>
   );

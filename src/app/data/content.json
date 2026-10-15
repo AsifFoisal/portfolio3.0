@@ -36,35 +36,32 @@
     },
     "segments": [
       {
-        "text": "I'm a UI/UX & Product Designer with 2.5+ years of experience, currently working with a "
+        "text": "Hey, hi! This is Seam RaHman, a professional UI/UX & "
       },
       {
-        "text": "multinational company",
+        "text": "Product Designer",
         "accent": true
       },
       {
-        "text": ", focused on solving complex product problems through simple, intuitive, and user-centered design. I've worked across multiple digital products, including "
+        "text": ". I came here to help you grow your "
       },
       {
-        "text": "Crypto currency",
+        "text": "business",
         "accent": true
       },
       {
-        "text": " and "
+        "text": ", improve your existing products, and turn complex ideas into simple, user-friendly digital experiences. I've worked on digital products across "
       },
       {
-        "text": "Perfect Panel",
+        "text": "EdTech,",
         "accent": true
       },
       {
-        "text": ", combining my BBA background, "
-      },
-      {
-        "text": "marketing & sales knowledge",
+        "text": "Cryptocurrency, SMM Panels, SaaS",
         "accent": true
       },
       {
-        "text": " and product thinking to help startups and digital businesses build better digital experiences."
+        "text": ", and more. I help startups and business owners turn ideas into digital products, improve existing websites, and build better digital management systems."
       }
     ],
     "posters": [
@@ -179,7 +176,9 @@
           "UX Design",
           "Mobile UI",
           "App Development"
-        ]
+        ],
+        "imageLeft": "",
+        "imageRight": ""
       },
       {
         "title": "Website Design & Development",
@@ -188,7 +187,9 @@
           "Web Design",
           "Responsive UI",
           "Development"
-        ]
+        ],
+        "imageLeft": "",
+        "imageRight": ""
       },
       {
         "title": "SaaS Product UI/UX Design",
@@ -197,7 +198,9 @@
           "Product Strategy",
           "SaaS UI",
           "Design Systems"
-        ]
+        ],
+        "imageLeft": "",
+        "imageRight": ""
       },
       {
         "title": "Web App & Dashboard Design",
@@ -206,7 +209,9 @@
           "Web Apps",
           "Dashboards",
           "Data Visualization"
-        ]
+        ],
+        "imageLeft": "",
+        "imageRight": ""
       },
       {
         "title": "MVP & Startup Product Design",
@@ -215,7 +220,9 @@
           "Product Discovery",
           "Prototyping",
           "MVP Design"
-        ]
+        ],
+        "imageLeft": "",
+        "imageRight": ""
       }
     ]
   },
@@ -324,6 +331,46 @@
         "alt": "Dummy design 10",
         "title": "Dummy 10",
         "subtitle": "Placeholder"
+      }
+    ]
+  },
+  "helix": {
+    "items": [
+      {
+        "image": ""
+      },
+      {
+        "image": ""
+      },
+      {
+        "image": ""
+      },
+      {
+        "image": ""
+      },
+      {
+        "image": ""
+      },
+      {
+        "image": ""
+      },
+      {
+        "image": ""
+      },
+      {
+        "image": ""
+      },
+      {
+        "image": ""
+      },
+      {
+        "image": ""
+      },
+      {
+        "image": ""
+      },
+      {
+        "image": ""
       }
     ]
   },
@@ -481,6 +528,87 @@
       }
     ]
   },
+  "work": {
+    "brandName": "Seam Rahman",
+    "heroTitle": "My work",
+    "heroLogoDim": "/logo-dim.png",
+    "heroLogoFill": "/logo-fill.png",
+    "heroLogoAlt": "Seam Rahman",
+    "liveLinkLabel": "Live Link",
+    "figmaLinkLabel": "Figma Link",
+    "projects": [
+      {
+        "title": "MyWorker AI",
+        "description": "AI platform simplifying hiring, management, and workforce scaling.",
+        "image": "",
+        "liveUrl": "",
+        "figmaUrl": "",
+        "align": "l",
+        "width": 40.6,
+        "art": "work"
+      },
+      {
+        "title": "Pulse Studio",
+        "description": "A motion-led studio website showcasing artists, projects, and culture.",
+        "image": "",
+        "liveUrl": "",
+        "figmaUrl": "",
+        "align": "r",
+        "width": 35.4,
+        "art": "pulse"
+      },
+      {
+        "title": "Loftloom",
+        "description": "Seamless real estate platform for effortless property discovery.",
+        "image": "",
+        "liveUrl": "",
+        "figmaUrl": "",
+        "align": "l",
+        "width": 40.6,
+        "art": "loft"
+      },
+      {
+        "title": "DFZ Watch",
+        "description": "A clean platform to discover, customize, and buy luxury watches.",
+        "image": "",
+        "liveUrl": "",
+        "figmaUrl": "",
+        "align": "c",
+        "width": 45.6,
+        "art": "dfz"
+      },
+      {
+        "title": "Domus Immobilien Kultur",
+        "description": "Premium real estate and architectural showcase platform.",
+        "image": "",
+        "liveUrl": "",
+        "figmaUrl": "",
+        "align": "r",
+        "width": 40.7,
+        "art": "domus"
+      },
+      {
+        "title": "Revnet",
+        "description": "Scalable hybrid cloud solutions for enterprises.",
+        "image": "",
+        "liveUrl": "",
+        "figmaUrl": "",
+        "align": "l",
+        "width": 35.7,
+        "art": "rev"
+      },
+      {
+        "title": "Fintech Dashboard",
+        "description": "A smart card and spending dashboard for modern banking.",
+        "image": "",
+        "liveUrl": "",
+        "figmaUrl": "",
+        "align": "c",
+        "width": 45.7,
+        "art": "fin"
+      }
+    ]
+  },
   "footer": {
     "backgroundImage": "/images/footer.png",
     "name": "Seam RaHman",
@@ -496,28 +624,16 @@
   },
   "navigation": [
     {
-      "label": "Home",
-      "href": "#home"
+      "label": "All Projects",
+      "href": "/work"
     },
     {
-      "label": "About me",
+      "label": "About Me",
       "href": "#about"
     },
     {
-      "label": "Featured works",
-      "href": "#projects"
-    },
-    {
-      "label": "Services",
+      "label": "My Services",
       "href": "#services"
-    },
-    {
-      "label": "Visual stories",
-      "href": "#stories"
-    },
-    {
-      "label": "My approach",
-      "href": "#approach"
     },
     {
       "label": "Experience",

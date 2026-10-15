@@ -3,9 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import './SiteNav.css';
 import Image from 'next/image';
+import Link from 'next/link';
 import { WhatsApp3DIcon } from './Icons';
+import { useSiteContent } from '../data/content-context';
 
 export default function SiteNav() {
+  const content = useSiteContent();
+  const footer = content.footer;
   const [menuOpen, setMenuOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [scrollPercentage, setScrollPercentage] = useState(0);
@@ -90,15 +94,33 @@ export default function SiteNav() {
 
           {/* Main Navigation Links */}
           <div className="space-y-4 mb-8">
-            <a href="#projects" onClick={() => setMenuOpen(false)} className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase">ALL PROJECTS</a>
-            <a href="#about" onClick={() => setMenuOpen(false)} className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase">ABOUT ME</a>
-            <a href="#services" onClick={() => setMenuOpen(false)} className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase">MY SERVICES</a>
-            <a href="#experience" onClick={() => setMenuOpen(false)} className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase">EXPERIENCE</a>
+            {content.navigation.map((link) => (
+              link.href.startsWith('/') ? (
+                <Link
+                  key={`${link.label}-${link.href}`}
+                  href={link.href}
+                  scroll={false}
+                  onClick={() => setMenuOpen(false)}
+                  className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase"
+                >
+                  {link.label}
+                </Link>
+              ) : (
+                <a
+                  key={`${link.label}-${link.href}`}
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase"
+                >
+                  {link.label}
+                </a>
+              )
+            ))}
           </div>
 
           {/* WhatsApp Pill Button */}
           <div className="flex justify-center mb-8">
-            <a href="https://wa.me/" target="_blank" rel="noreferrer" className="say-hello-btn">
+            <a href={footer.whatsappUrl} target="_blank" rel="noreferrer" className="say-hello-btn">
               <span className="say-hello-btn__text">Contact With Me</span>
               <span className="say-hello-btn__badge">
                 <WhatsApp3DIcon className="say-hello-btn__icon" />
@@ -119,7 +141,7 @@ export default function SiteNav() {
             <div className="space-y-5">
               <div>
                 <span className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Drop us a line</span>
-                <a href="mailto:forwork5723@gmail.com" className="font-bold text-gray-900 hover:text-gray-500 transition-colors break-all">forwork5723@gmail.com</a>
+                <a href={`mailto:${footer.email}`} className="font-bold text-gray-900 hover:text-gray-500 transition-colors break-all">{footer.email}</a>
               </div>
               <div>
                 <span className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Curriculum Vitae</span>

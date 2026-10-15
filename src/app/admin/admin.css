@@ -407,6 +407,11 @@
   background: #f4f4f4;
 }
 
+video.admin-image-preview {
+  width: 150px;
+  background: #000;
+}
+
 .admin-image-controls {
   display: flex;
   flex-direction: column;
@@ -469,3 +474,117 @@
     flex-direction: column;
   }
 }
+
+/* ---------- Toasts ---------- */
+
+.admin-toaster {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(360px, calc(100vw - 40px));
+  pointer-events: none;
+}
+
+.admin-toast {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 13px 12px 13px 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: #0b0b12;
+  color: #e9e9e9;
+  font-family: var(--font-jamjuree), var(--font-inter), 'Inter', Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  box-shadow: 0 20px 48px -20px rgba(0, 0, 0, 0.75);
+  pointer-events: auto;
+  animation: admin-toast-in 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Left accent rail carries the site's brand colour per variant. */
+.admin-toast::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--toast-color, #8b8b92);
+}
+
+.admin-toast--success {
+  --toast-color: #34d399;
+}
+
+.admin-toast--error {
+  --toast-color: #ff4c4e;
+}
+
+.admin-toast--info {
+  --toast-color: #8b8b92;
+}
+
+.admin-toast__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 999px;
+  background: var(--toast-color, #8b8b92);
+  color: #0b0b12;
+}
+
+.admin-toast__icon svg {
+  display: block;
+  width: 13px;
+  height: 13px;
+}
+
+.admin-toast__message {
+  flex: 1;
+  min-width: 0;
+  padding-top: 1px;
+}
+
+.admin-toast__close {
+  flex-shrink: 0;
+  padding: 0 2px 0 6px;
+  border: 0;
+  background: transparent;
+  color: #6f6f78;
+  font-size: 16px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: color 160ms;
+}
+
+.admin-toast__close:hover {
+  color: #e9e9e9;
+}
+
+@keyframes admin-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-toast {
+    animation: none;
+  }
+}
+

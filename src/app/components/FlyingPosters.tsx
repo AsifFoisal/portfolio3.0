@@ -14,63 +14,15 @@ precision highp float;
 
 attribute vec3 position;
 attribute vec2 uv;
-attribute vec3 normal;
 
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
-uniform mat3 normalMatrix;
-
-uniform float uPosition;
-uniform float uTime;
-uniform float uSpeed;
-uniform vec3 distortionAxis;
-uniform vec3 rotationAxis;
-uniform float uDistortion;
 
 varying vec2 vUv;
-varying vec3 vNormal;
-
-float PI = 3.141592653589793238;
-mat4 rotationMatrix(vec3 axis, float angle) {
-    axis = normalize(axis);
-    float s = sin(angle);
-    float c = cos(angle);
-    float oc = 1.0 - c;
-
-    return mat4(
-      oc * axis.x * axis.x + c,         oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
-      oc * axis.x * axis.y + axis.z * s,oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
-      oc * axis.z * axis.x - axis.y * s,oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
-      0.0,                              0.0,                                0.0,                                1.0
-    );
-}
-
-vec3 rotate(vec3 v, vec3 axis, float angle) {
-  mat4 m = rotationMatrix(axis, angle);
-  return (m * vec4(v, 1.0)).xyz;
-}
-
-float qinticInOut(float t) {
-  return t < 0.5
-    ? 16.0 * pow(t, 5.0)
-    : -0.5 * abs(pow(2.0 * t - 2.0, 5.0)) + 1.0;
-}
 
 void main() {
   vUv = uv;
-
-  float norm = 0.5;
-  vec3 newpos = position;
-  float offset = (dot(distortionAxis, position) + norm / 2.) / norm;
-  float localprogress = clamp(
-    (fract(uPosition * 5.0 * 0.01) - 0.01 * uDistortion * offset) / (1. - 0.01 * uDistortion),
-    0.,
-    2.
-  );
-  localprogress = qinticInOut(localprogress) * PI;
-  newpos = rotate(newpos, rotationAxis, localprogress);
-
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(newpos, 1.0);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
 `;
 
@@ -216,7 +168,6 @@ class Media {
         uPlaneSize: { value: [0, 0] },
         uImageSize: { value: [0, 0] },
         uSpeed: { value: 0 },
-        rotationAxis: { value: [0, 1, 0] },
         distortionAxis: { value: [1, 1, 0] },
         uDistortion: { value: this.distortion },
         uViewportSize: { value: [this.viewport.width, this.viewport.height] },
@@ -322,8 +273,6 @@ class PosterCanvas {
   start = 0;
   dragStart = 0;
   offset = 0;
-  idle = 0;
-  lastTime = performance.now();
   alive = true;
   raf = 0;
 
@@ -352,6 +301,10 @@ class PosterCanvas {
 
     this.createGeometry();
     this.createMedias();
+    // Park on the first image: the snap grid sits at half-step offsets.
+    const step = this.medias?.[0]?.height || 0;
+    this.scroll.current = step * 0.5;
+    this.scroll.target = step * 0.5;
     this.update();
     this.addEventListeners();
   }
@@ -378,7 +331,7 @@ class PosterCanvas {
 
   createGeometry() {
     this.planeGeometry = new Plane(this.gl, {
-      heightSegments: 1,
+      heightSegments: 100,
       widthSegments: 100,
     });
   }
@@ -441,21 +394,29 @@ class PosterCanvas {
     this.isDown = false;
   }
 
-  // Posters advance with the section's own position in the viewport, so normal
-  // page scrolling drives the effect, plus a gentle drift to keep it alive.
+  // Page scroll drives the carousel through its images, but the target snaps to
+  // one image per step so each poster parks dead center and stays flat.
   updateAutoTarget() {
-    const rect = this.container.getBoundingClientRect();
     const viewH = window.innerHeight || 1;
-    const progress = (viewH - rect.top) / (viewH + rect.height);
     const range = this.medias?.[0]?.heightTotal ?? 0;
-    this.scroll.target = progress * range + this.idle + this.offset;
+    const step = this.medias?.[0]?.height || 1;
+    const section = this.container.closest('section') as HTMLElement | null;
+    let progress: number;
+    if (section) {
+      const scrollRange = Math.max(1, section.offsetHeight - viewH);
+      progress = Math.min(1, Math.max(0, (window.scrollY - section.offsetTop) / scrollRange));
+    } else {
+      const rect = this.container.getBoundingClientRect();
+      progress = (() => {
+        const p = (viewH - rect.top) / (viewH + rect.height);
+        return Math.min(1, Math.max(0, p));
+      })();
+    }
+    const raw = progress * range + this.offset;
+    this.scroll.target = (Math.round(raw / step - 0.5) + 0.5) * step;
   }
 
   update() {
-    const now = performance.now();
-    const dt = Math.min(0.05, Math.max(0.001, (now - this.lastTime) / 1000));
-    this.lastTime = now;
-    this.idle += dt * 0.6;
     this.updateAutoTarget();
     this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
 

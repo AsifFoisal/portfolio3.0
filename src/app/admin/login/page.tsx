@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import LoginForm from './LoginForm';
+import { ToastProvider } from '../Toaster';
 import { getAdminSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -11,5 +12,9 @@ export const metadata = {
 export default async function AdminLoginPage() {
   const session = await getAdminSession();
   if (session) redirect('/admin');
-  return <LoginForm />;
+  return (
+    <ToastProvider>
+      <LoginForm />
+    </ToastProvider>
+  );
 }

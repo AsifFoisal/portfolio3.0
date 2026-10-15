@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
 import type { SiteContent } from '../data/content-types';
+import { useToast } from './Toaster';
 import './admin.css';
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
@@ -11,15 +12,24 @@ type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string
 const IMAGE_PATTERN = /\.(png|jpe?g|webp|gif|svg|avif)(\?.*)?$/i;
 const isImagePath = (value: string) => IMAGE_PATTERN.test(value) && /^(https?:)?\/\//.test(value) === (value.startsWith('http'));
 
+const VIDEO_PATTERN = /\.(mp4|webm|mov|m4v|ogv|ogg|avi|mkv)(\?.*)?$/i;
+const isVideoPath = (value: string) =>
+  VIDEO_PATTERN.test(value) || /res\.cloudinary\.com\/[^/]+\/video\/upload\//i.test(value);
+
+/** Cloudinary's free plan caps a single upload at 100 MB. */
+const MAX_MEDIA_BYTES = 100 * 1024 * 1024;
+
 /** Field order for each top-level section. Important fields first. */
 const FIELD_ORDER: Record<string, string[]> = {
   meta: ['title', 'description'],
   hero: ['greeting', 'nameLines', 'portrait', 'portraitAlt', 'portraitCaption', 'description', 'ctaLabel', 'title', 'disciplines', 'reel'],
   about: ['stats', 'face', 'faceHover', 'segments', 'posters'],
   featured: ['heading', 'eyebrow', 'projects', 'viewAllLabel', 'behanceUrl', 'liveLinkLabel', 'figmaLinkLabel', 'dialogEyebrowPrefix', 'dialogDownloadLabel'],
-  services: ['heading', 'eyebrow', 'callLabel', 'items'],
+  services: ['heading', 'eyebrow', 'callLabel', 'items', 'title', 'description', 'imageLeft', 'imageRight', 'tags'],
   stories: ['captionTitle', 'captionText', 'captionEyebrow', 'videoUrl', 'poster', 'mobileTitleTop', 'mobileTitleBottom'],
   latest: ['heading', 'items'],
+  helix: ['items', 'image'],
+  work: ['brandName', 'heroTitle', 'projects', 'heroLogoDim', 'heroLogoFill', 'heroLogoAlt', 'liveLinkLabel', 'figmaLinkLabel', 'title', 'description', 'image', 'liveUrl', 'figmaUrl', 'align', 'width', 'art'],
   approach: ['heading', 'steps'],
   experience: ['heading', 'items'],
   testimonials: ['heading', 'eyebrow', 'items'],
@@ -35,6 +45,8 @@ const SECTION_LABELS: Array<{ key: keyof SiteContent; label: string }> = [
   { key: 'services', label: 'Services' },
   { key: 'stories', label: 'Visual stories' },
   { key: 'latest', label: 'Latest works' },
+  { key: 'helix', label: '3D Ribbon' },
+  { key: 'work', label: 'Work page' },
   { key: 'approach', label: 'Approach' },
   { key: 'experience', label: 'Experience' },
   { key: 'testimonials', label: 'Testimonials' },
@@ -68,23 +80,100 @@ function orderedEntries(obj: Record<string, JsonValue>, section: string): [strin
   return ordered.concat([...keys].sort().map((key) => [key, obj[key]] as [string, JsonValue]));
 }
 
-function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  const fileRef = useMemo(() => ({ current: null as HTMLInputElement | null }), []);
+type UploadSignatureResponse = {
+  configured?: boolean;
+  apiKey?: string;
+  timestamp?: number;
+  signature?: string;
+  folder?: string;
+  uploadUrl?: string;
+};
+
+/**
+ * Media field for images and videos. When Cloudinary is configured the file is
+ * uploaded straight from the browser to Cloudinary (via a server-signed
+ * payload) so large videos bypass the app server, then the backend records it
+ * and returns an optimized delivery URL. Otherwise it falls back to the
+ * built-in database uploader (images only).
+ */
+function MediaField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  const toast = useToast();
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUpLoading] = useState(false);
-  const [uploadError, setUploadError] = useState('');
+  const isVideo = isVideoPath(value);
 
   async function handleFile(file: File) {
     setUpLoading(true);
-    setUploadError('');
     try {
+      if (file.size > MAX_MEDIA_BYTES) throw new Error('File is larger than 100 MB');
+      const kind = file.type.startsWith('video/') ? 'video' : 'image';
+
+      // Ask the backend whether Cloudinary is configured and get a signed payload.
+      const signResponse = await fetch('/api/admin/upload/sign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: kind }),
+      });
+      const signature = (await signResponse.json().catch(() => ({}))) as UploadSignatureResponse;
+
+      if (signResponse.ok && signature.configured && signature.uploadUrl) {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('api_key', signature.apiKey ?? '');
+        form.append('timestamp', String(signature.timestamp ?? ''));
+        form.append('folder', signature.folder ?? '');
+        form.append('signature', signature.signature ?? '');
+        const response = await fetch(signature.uploadUrl, { method: 'POST', body: form });
+        const result = (await response.json().catch(() => ({}))) as {
+          public_id?: string;
+          secure_url?: string;
+          resource_type?: string;
+          format?: string;
+          bytes?: number;
+          width?: number;
+          height?: number;
+          duration?: number;
+          error?: { message?: string };
+        };
+        if (!response.ok || !result.secure_url) {
+          throw new Error(result.error?.message ?? 'Cloudinary upload failed');
+        }
+
+        // Record metadata + receive the optimized delivery URL.
+        const completeResponse = await fetch('/api/admin/upload/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            publicId: result.public_id,
+            secureUrl: result.secure_url,
+            resourceType: result.resource_type ?? kind,
+            format: result.format,
+            bytes: result.bytes,
+            width: result.width,
+            height: result.height,
+            duration: result.duration,
+          }),
+        });
+        const complete = (await completeResponse.json().catch(() => ({}))) as { url?: string; error?: string };
+        if (!completeResponse.ok) throw new Error(complete.error ?? 'Could not record upload');
+        onChange(complete.url ?? result.secure_url);
+        toast.success(kind === 'video' ? 'Video uploaded.' : 'Image uploaded.');
+        return;
+      }
+
+      // Cloudinary not configured → built-in database uploader (images only).
+      if (kind === 'video') {
+        throw new Error('Video upload needs Cloudinary credentials (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET).');
+      }
       const body = new FormData();
       body.append('file', file);
       const response = await fetch('/api/admin/upload', { method: 'POST', body });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? 'Upload failed');
+      const data = (await response.json().catch(() => ({}))) as { url?: string; error?: string };
+      if (!response.ok || !data.url) throw new Error(data.error ?? 'Upload failed');
       onChange(data.url);
+      toast.success('Image uploaded.');
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : 'Upload failed');
+      toast.error(error instanceof Error ? error.message : 'Upload failed');
     } finally {
       setUpLoading(false);
     }
@@ -94,20 +183,52 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
     <div className="admin-image-field">
       <span className="admin-label">{label}</span>
       <div className="admin-image-row">
-        {value && <img className="admin-image-preview" src={value} alt="" />}
+        {value && (isVideo ? (
+          <video className="admin-image-preview" src={value} controls muted preload="metadata" />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="admin-image-preview" src={value} alt="" />
+        ))}
         <div className="admin-image-controls">
           <input className="admin-input" value={value} onChange={(event) => onChange(event.target.value)} spellCheck={false} />
           <div className="admin-image-actions">
             <button type="button" className="admin-outline-button" onClick={() => fileRef.current?.click()} disabled={uploading}>
-              {uploading ? 'Uploading…' : 'Upload image'}
+              {uploading ? 'Uploading…' : isVideo ? 'Upload video' : 'Upload image'}
             </button>
             {value && <a className="admin-outline-button" href={value} target="_blank" rel="noreferrer">Open</a>}
           </div>
-          {uploadError && <p className="admin-error">{uploadError}</p>}
         </div>
       </div>
-      <input ref={(el) => { fileRef.current = el; }} type="file" accept="image/*" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleFile(file); event.target.value = ''; }} />
+      <input ref={(el) => { fileRef.current = el; }} type="file" accept="image/*,video/*" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleFile(file); event.target.value = ''; }} />
     </div>
+  );
+}
+
+/**
+ * Number input that can be cleared. A plain controlled number input snaps back
+ * to "0" the moment you empty it; we keep a local text draft so the field stays
+ * blank while editing and only commit a number (0 when blank / not yet valid).
+ */
+function NumberField({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const text = draft ?? String(value);
+
+  return (
+    <label className="admin-field">
+      {label}
+      <input
+        className="admin-input"
+        type="number"
+        step="any"
+        value={text}
+        onChange={(event) => {
+          const raw = event.target.value;
+          setDraft(raw);
+          const parsed = Number(raw);
+          onChange(raw === '' || !Number.isFinite(parsed) ? 0 : parsed);
+        }}
+      />
+    </label>
   );
 }
 
@@ -122,17 +243,15 @@ function JsonField({ label, value, onChange }: { label: string; value: JsonValue
   }
 
   if (typeof value === 'number') {
-    return (
-      <label className="admin-field">
-        {label}
-        <input className="admin-input" type="number" step="any" value={value} onChange={(event) => onChange(event.target.value === '' ? 0 : Number(event.target.value))} />
-      </label>
-    );
+    return <NumberField label={label} value={value} onChange={onChange} />;
   }
 
   if (typeof value === 'string') {
-    if (isImagePath(value) || value.startsWith('/uploads/')) {
-      return <ImageField label={label} value={value} onChange={onChange} />;
+    // Media fields are recognised by label (stable, e.g. "Image Left") or by
+    // value (for arrays of images whose items only get a generic "Item n" label).
+    const isMediaLabel = label.toLowerCase().startsWith('image') || label === 'Video url';
+    if (isMediaLabel || isImagePath(value) || isVideoPath(value) || value.startsWith('/uploads/')) {
+      return <MediaField label={label} value={value} onChange={onChange} />;
     }
     if (value.length > 90 || value.includes('\n')) {
       return (
@@ -154,6 +273,7 @@ function JsonField({ label, value, onChange }: { label: string; value: JsonValue
 }
 
 function JsonArray({ label, value, onChange, section }: { label: string; value: JsonValue[]; onChange: (value: JsonValue[]) => void; section: string }) {
+  const toast = useToast();
   const template = value.length > 0 ? emptyLike(value[0]) : '';
 
   function replaceAt(index: number, item: JsonValue) {
@@ -166,6 +286,7 @@ function JsonArray({ label, value, onChange, section }: { label: string; value: 
     const next = [...value];
     [next[index], next[target]] = [next[target], next[index]];
     onChange(next);
+    toast.info(delta < 0 ? `Moved #${index + 1} up.` : `Moved #${index + 1} down.`);
   }
 
   return (
@@ -178,13 +299,13 @@ function JsonArray({ label, value, onChange, section }: { label: string; value: 
             <div className="admin-array-item-actions">
               <button type="button" onClick={() => move(index, -1)} disabled={index === 0} title="Move up">↑</button>
               <button type="button" onClick={() => move(index, 1)} disabled={index === value.length - 1} title="Move down">↓</button>
-              <button type="button" className="admin-danger" onClick={() => onChange(value.filter((_, i) => i !== index))} title="Remove">✕</button>
+              <button type="button" className="admin-danger" onClick={() => { onChange(value.filter((_, i) => i !== index)); toast.info(`Item #${index + 1} removed.`); }} title="Remove">✕</button>
             </div>
           </div>
           <JsonNode label={`Item ${index + 1}`} value={item} onChange={(itemValue) => replaceAt(index, itemValue)} section={section} />
         </div>
       ))}
-      <button type="button" className="admin-outline-button" onClick={() => onChange([...value, template])}>
+      <button type="button" className="admin-outline-button" onClick={() => { onChange([...value, template]); toast.success('Item added.'); }}>
         Add item
       </button>
     </fieldset>
@@ -214,12 +335,11 @@ function JsonNode({ label, value, onChange, section }: { label: string; value: J
 
 export default function AdminApp({ initialContent }: { initialContent: SiteContent }) {
   const router = useRouter();
+  const toast = useToast();
   const [content, setContent] = useState<SiteContent>(initialContent);
   const [activeTab, setActiveTab] = useState<keyof SiteContent>('about');
-  const [status, setStatus] = useState('');
   const [saving, setSaving] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' });
-  const [passwordStatus, setPasswordStatus] = useState('');
 
   const activeContent = content[activeTab] as unknown as JsonValue;
 
@@ -234,7 +354,6 @@ export default function AdminApp({ initialContent }: { initialContent: SiteConte
 
   async function handleSave() {
     setSaving(true);
-    setStatus('');
     try {
       const response = await fetch('/api/admin/content', {
         method: 'PUT',
@@ -243,35 +362,38 @@ export default function AdminApp({ initialContent }: { initialContent: SiteConte
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? 'Save failed');
-      setStatus('Saved — the live site is updated.');
+      toast.success('Changes saved — the live site is updated.');
       router.refresh();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Save failed');
+      toast.error(error instanceof Error ? error.message : 'Save failed');
     } finally {
       setSaving(false);
     }
   }
 
   async function handleReset() {
-    const response = await fetch('/api/admin/content');
-    if (response.ok) {
+    try {
+      const response = await fetch('/api/admin/content');
+      if (!response.ok) throw new Error('Could not load the saved version.');
       const data = await response.json();
       setContent(data.content);
-      setStatus('Reverted to the last saved version.');
+      toast.info('Reverted to the last saved version.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not revert.');
     }
   }
 
   async function handleLogout() {
     await authClient.signOut();
+    toast.info('Signed out.');
     router.push('/admin/login');
     router.refresh();
   }
 
   async function handleChangePassword(event: React.FormEvent) {
     event.preventDefault();
-    setPasswordStatus('');
     if (passwordForm.next !== passwordForm.confirm) {
-      setPasswordStatus('New passwords do not match.');
+      toast.error('New passwords do not match.');
       return;
     }
     const result = await authClient.changePassword({
@@ -280,11 +402,11 @@ export default function AdminApp({ initialContent }: { initialContent: SiteConte
       revokeOtherSessions: false,
     });
     if (result.error) {
-      setPasswordStatus(result.error.message ?? 'Could not change the password.');
+      toast.error(result.error.message ?? 'Could not change the password.');
       return;
     }
     setPasswordForm({ current: '', next: '', confirm: '' });
-    setPasswordStatus('Password updated.');
+    toast.success('Password updated.');
   }
 
   return (
@@ -295,7 +417,6 @@ export default function AdminApp({ initialContent }: { initialContent: SiteConte
           <strong>Content Admin</strong>
         </div>
         <div className="admin-header-actions">
-          {status && <span className="admin-status" role="status">{status}</span>}
           {dirty && <span className="admin-dirty">Unsaved changes</span>}
           <button className="admin-ghost-button" onClick={handleReset} disabled={saving}>Revert</button>
           <button className="admin-solid-button" onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button>
@@ -334,7 +455,6 @@ export default function AdminApp({ initialContent }: { initialContent: SiteConte
                 <input className="admin-input" type="password" value={passwordForm.confirm} onChange={(event) => setPasswordForm({ ...passwordForm, confirm: event.target.value })} autoComplete="new-password" required minLength={8} />
               </label>
               <button className="admin-outline-button" type="submit">Update password</button>
-              {passwordStatus && <p className="admin-status" role="status">{passwordStatus}</p>}
             </form>
           </section>
         </main>
