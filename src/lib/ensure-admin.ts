@@ -4,6 +4,12 @@ import { db } from './db';
  * Creates the admin account from ADMIN_EMAIL / ADMIN_PASSWORD (see .env.local)
  * on first run. Existing users are left untouched unless their role is missing.
  *
+ * Note: an existing password is never overwritten. Because local development and
+ * the deployment usually share one database, changing ADMIN_PASSWORD in a hosting
+ * dashboard has no effect on an account that already exists — run
+ * `npx tsx src/scripts/set-admin-password.ts` for that. When the values drift we
+ * say so in the logs instead of failing silently.
+ *
  * All SQL uses PostgreSQL syntax ($N parameter placeholders, TIMESTAMPTZ for dates,
  * BOOLEAN for emailVerified, EXCLUDED for ON CONFLICT updates).
  */
@@ -89,8 +95,43 @@ export async function ensureAdminUser(): Promise<void> {
         "UPDATE \"user\" SET role = 'admin' WHERE id = $1",
         [existing.id]
       );
+    } else {
+      await warnOnPasswordMismatch(existing.id, email, password);
     }
   } catch (error) {
     console.error('[auth] Failed to ensure admin user:', error);
+  }
+}
+
+/**
+ * Explains in the logs why ADMIN_EMAIL / ADMIN_PASSWORD can look "correct" and
+ * still be rejected — the account was created earlier with a different password
+ * and is intentionally never overwritten.
+ */
+async function warnOnPasswordMismatch(
+  userId: string,
+  email: string,
+  configuredPassword: string
+): Promise<void> {
+  try {
+    const result = await db.execute(
+      'SELECT password FROM "account" WHERE "userId" = $1 AND "providerId" = $2',
+      [userId, 'credential']
+    );
+    const hash = (result.rows[0] as { password: string | null } | undefined)?.password;
+    if (!hash) return;
+
+    const { verifyPassword } = await import('better-auth/crypto');
+    const matches = await verifyPassword({ hash, password: configuredPassword });
+    if (matches) return;
+
+    console.warn(
+      `[auth] ADMIN_PASSWORD does not match the stored password for ${email}. ` +
+        'Existing accounts are never overwritten, so this value is ignored. ' +
+        'To change the password run: ' +
+        `npx tsx src/scripts/set-admin-password.ts "${email}" "<new-password>"`
+    );
+  } catch {
+    // Diagnostics must never break boot.
   }
 }

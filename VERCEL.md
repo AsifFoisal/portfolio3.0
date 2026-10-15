@@ -18,7 +18,7 @@ Vercel → **Project → Settings → Environment Variables**. Add each one for
 | `BETTER_AUTH_SECRET`   | ✅       | `openssl rand -base64 32`                                             |
 | `BETTER_AUTH_URL`      | ✅       | The URL you actually visit, e.g. `https://your-domain.com`             |
 | `ADMIN_EMAIL`          | ✅       | Login email for the admin                                             |
-| `ADMIN_PASSWORD`       | ✅       | Login password (the account is created on first boot)                 |
+| `ADMIN_PASSWORD`       | ✅       | Login password — only used the first time the account is created      |
 | `ADMIN_NAME`           | –        | Display name, defaults to `Admin`                                     |
 | `CLOUDINARY_CLOUD_NAME`| –        | Enables Cloudinary uploads. Without it, uploads fall back to base64   |
 | `CLOUDINARY_API_KEY`   | –        | "                                                                     |
@@ -64,6 +64,17 @@ The tables are created automatically the first time the app boots
 The admin account is seeded from `ADMIN_EMAIL` / `ADMIN_PASSWORD` and given the
 `admin` role.
 
+**The password is only written when the account does not exist yet.** Local
+development and the deployment share one database, so an account created locally
+keeps its local password — editing `ADMIN_PASSWORD` on Vercel afterwards changes
+nothing. To create or reset it explicitly (run locally against the same
+`DATABASE_URL`):
+
+```bash
+npx tsx src/scripts/set-admin-password.ts                        # ADMIN_EMAIL / ADMIN_PASSWORD from .env.local
+npx tsx src/scripts/set-admin-password.ts admin@example.com "new-password"
+```
+
 To push your existing local `content.json` into the database once:
 
 ```bash
@@ -97,13 +108,30 @@ BetterAuthError: You are using the default secret. Please set `BETTER_AUTH_SECRE
 
 Add the variable and redeploy.
 
+### Admin login rejected
+
+The account is stored in the database, and local development and the deployment
+share one database. `ADMIN_PASSWORD` only takes effect when the account is first
+created, so **a password typed into Vercel after that is ignored** and the old one
+keeps working. Runtime logs say so explicitly:
+
+```
+[auth] ADMIN_PASSWORD does not match the stored password for admin@example.com.
+Existing accounts are never overwritten, so this value is ignored. To change the
+password run: npx tsx src/scripts/set-admin-password.ts "admin@example.com" "<new-password>"
+```
+
+Fix it with that command (against the same `DATABASE_URL`), or sign in with the
+password that was originally used. If the email doesn't match any account at all,
+no account is created and every sign-in fails.
+
 ### Signed in, but every save fails with a 500 / “Invalid origin”
 
-`BETTER_AUTH_URL` doesn't match the domain in the address bar. Set it to the URL
-you actually use, or delete it and let the origin be taken from the request.
-A `BETTER_AUTH_URL=http://localhost:3000` copied from `.env.local` is ignored on
-Vercel (the deployment URL is used instead) and a warning is logged — but the
-value should still be corrected.
+The origin must match the domain in the address bar. `BETTER_AUTH_URL` is used
+when it is set to a real domain; on Vercel a localhost value is ignored (a warning
+is logged) and the origin is taken from the request instead, so production
+domains, `*.vercel.app` preview URLs and custom domains all work. Set
+`BETTER_AUTH_URL` to your live domain anyway so callbacks and emails point at it.
 
 ### Content changes don't appear
 

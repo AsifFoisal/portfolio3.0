@@ -4,7 +4,7 @@ import AdminSetup from './AdminSetup';
 import { ToastProvider } from './Toaster';
 import { getContent } from '../data/content-store';
 import { getAdminSession } from '@/lib/session';
-import { getAdminEnvIssues } from '@/lib/admin-env';
+import { getAdminConfigIssues } from '@/lib/admin-env';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,9 +13,10 @@ export const metadata = {
 };
 
 export default async function AdminPage() {
-  // Checked before anything touches auth or the database: a missing variable
-  // would otherwise crash the route with an opaque server error.
-  const issues = getAdminEnvIssues();
+  // Checked before anything touches auth or the database: a missing variable or
+  // an unreachable database would otherwise crash the route with an opaque
+  // server error.
+  const issues = await getAdminConfigIssues();
   if (issues.length > 0) return <AdminSetup issues={issues} />;
 
   const session = await getAdminSession();

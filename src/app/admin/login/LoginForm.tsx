@@ -7,6 +7,33 @@ import { authClient } from '@/lib/auth-client';
 import { useToast } from '../Toaster';
 import '../admin.css';
 
+/**
+ * Turns a client error into something actionable.
+ *
+ * Only JSON responses carry a `message`. A crashed route returns an HTML error
+ * page, which the fetch layer reports as a bare HTTP status — rendering that as
+ * "check your credentials" sends you looking in the wrong place entirely.
+ */
+function describeSignInError(error: {
+  message?: string;
+  status?: number;
+  statusText?: string;
+}): string {
+  const message = error.message?.trim();
+  if (message) return message;
+
+  const status = error.status;
+  if (status && status > 0) {
+    const label = error.statusText?.trim() ? ` ${error.statusText.trim()}` : '';
+    return (
+      `Login failed (HTTP ${status}${label}). The server did not return a valid ` +
+      "response — check the deployment's environment variables and function logs."
+    );
+  }
+
+  return 'Login failed — the server could not be reached. Check your connection and try again.';
+}
+
 export default function LoginForm() {
   const router = useRouter();
   const toast = useToast();
@@ -20,7 +47,7 @@ export default function LoginForm() {
     const result = await authClient.signIn.email({ email, password });
     setPending(false);
     if (result.error) {
-      toast.error(result.error.message ?? 'Login failed. Check your credentials.');
+      toast.error(describeSignInError(result.error));
       return;
     }
     router.push('/admin');

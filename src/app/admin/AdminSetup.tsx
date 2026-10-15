@@ -19,7 +19,7 @@ export default function AdminSetup({ issues }: { issues: AdminEnvIssue[] }) {
         <h1 className="admin-title">Admin isn&rsquo;t configured yet</h1>
 
         <p className="admin-setup-lead">
-          This deployment is missing environment variables the CMS needs. Add them in{' '}
+          This deployment can&rsquo;t reach the services the CMS needs. Fix the items below in{' '}
           <strong>Vercel → Project → Settings → Environment Variables</strong>, then redeploy.
         </p>
 

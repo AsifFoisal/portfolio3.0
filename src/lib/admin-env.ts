@@ -17,6 +17,9 @@
 
 const DEFAULT_SECRET = 'better-auth-secret-12345678901234567890';
 
+/** How long the diagnostics page waits for the database before giving up. */
+const DB_PING_TIMEOUT_MS = 5000;
+
 export type AdminEnvIssue = {
   /** Environment variable to add or fix in the hosting dashboard. */
   key: string;
@@ -62,5 +65,66 @@ export function getAdminEnvIssues(): AdminEnvIssue[] {
     });
   }
 
+  return issues;
+}
+
+/** Keeps credentials out of anything rendered into the page. */
+function scrubConnectionString(text: string): string {
+  return text
+    .replace(/postgres(?:ql)?:\/\/\S+/gi, 'postgresql://***')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 200);
+}
+
+/**
+ * Confirms the database actually answers.
+ *
+ * A `DATABASE_URL` can be present and still be unusable — wrong password, a
+ * paused Supabase project, a host that only resolves over IPv6. The environment
+ * checks above cannot see that, and the resulting failure mode is nasty: the
+ * public site looks fine (it falls back to `content.json`) while every auth
+ * request dies with an HTML error page, so signing in only says "check your
+ * credentials".
+ */
+export async function checkDatabase(): Promise<AdminEnvIssue | null> {
+  if (!process.env.DATABASE_URL?.trim()) return null;
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const { execute } = await import('./db');
+    await Promise.race([
+      execute('SELECT 1'),
+      new Promise((_resolve, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`no response within ${DB_PING_TIMEOUT_MS}ms`)),
+          DB_PING_TIMEOUT_MS
+        );
+      }),
+    ]);
+    return null;
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    return {
+      key: 'DATABASE_URL',
+      problem: `set, but the database is not reachable — ${scrubConnectionString(detail)}`,
+      fix: 'Check the pooler connection string and that the Supabase project is running. Port 6543 is recommended for serverless.',
+    };
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+/**
+ * Every blocking misconfiguration: the environment checks plus a live database
+ * probe. Used by the admin pages so a broken deployment explains itself instead
+ * of failing later with an opaque error.
+ */
+export async function getAdminConfigIssues(): Promise<AdminEnvIssue[]> {
+  const issues = getAdminEnvIssues();
+  if (issues.some((issue) => issue.key === 'DATABASE_URL')) return issues;
+
+  const databaseIssue = await checkDatabase();
+  if (databaseIssue) issues.push(databaseIssue);
   return issues;
 }

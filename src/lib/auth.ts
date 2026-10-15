@@ -23,36 +23,67 @@ const dialect = new PostgresDialect({ pool: pgPool });
 
 const LOCALHOST_URL = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?/i;
 
+function hostOf(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    return new URL(url).host;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
- * The origin Better Auth signs callbacks and validates request origins against.
+ * The origin Better Auth signs cookies, callbacks and CSRF checks against.
  *
  * `BETTER_AUTH_URL` is always passed explicitly because Better Auth otherwise
- * reads it from the environment itself and we need to be able to reject a
- * bad value. A `BETTER_AUTH_URL=http://localhost:3000` copied from `.env.local`
- * into the hosting dashboard would pin a live deployment to localhost, so on
- * Vercel we prefer the deployment's own URL in that case.
+ * reads it from the environment itself and we need to be able to reject a bad
+ * value. Two deployment realities it has to survive:
+ *
+ *   1. `BETTER_AUTH_URL=http://localhost:3000` copied from `.env.local` into
+ *      the hosting dashboard — pinning every origin check to localhost.
+ *   2. A single deployment being reachable on several hosts: the production
+ *      domain, `*.vercel.app` preview URLs, and the deployment URL. Whichever
+ *      one is used must be accepted, and the session cookie must be set for it.
+ *
+ * So on Vercel we hand over a dynamic allowlist and let the origin come from the
+ * request; the fallback is only used when there is no request to inspect
+ * (e.g. during a build).
  */
-function resolveBaseUrl(): string | undefined {
+function resolveBaseUrl() {
   const configured = process.env.BETTER_AUTH_URL?.trim();
 
-  if (!process.env.VERCEL) return configured; // local dev — trust .env.local
+  // Local development has exactly one known origin.
+  if (!process.env.VERCEL) return configured;
 
-  if (configured && !LOCALHOST_URL.test(configured)) return configured;
-
-  const host =
+  const configuredIsLocalhost = Boolean(configured && LOCALHOST_URL.test(configured));
+  const deploymentHost =
     process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() || process.env.VERCEL_URL?.trim();
-  if (host) {
-    if (configured) {
-      console.warn(
-        `[auth] BETTER_AUTH_URL is "${configured}" (a localhost address) but this is a ` +
-          `Vercel deployment — using https://${host} instead. Set BETTER_AUTH_URL to ` +
-          'your live domain in Project Settings → Environment Variables.'
-      );
-    }
-    return `https://${host}`;
+
+  const allowedHosts = new Set<string>(['*.vercel.app', 'localhost:3000', '127.0.0.1:3000']);
+  const configuredHost = configuredIsLocalhost ? undefined : hostOf(configured);
+  if (configuredHost) allowedHosts.add(configuredHost);
+  for (const host of [
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    process.env.VERCEL_URL,
+  ]) {
+    if (host?.trim()) allowedHosts.add(host.trim());
   }
 
-  return configured; // no deployment URL known — let Better Auth derive it
+  const fallback =
+    (configured && !configuredIsLocalhost ? configured : undefined) ??
+    (deploymentHost ? `https://${deploymentHost}` : undefined);
+
+  if (!fallback) return configured; // nothing to anchor on — let Better Auth derive it
+
+  if (configuredIsLocalhost) {
+    console.warn(
+      `[auth] BETTER_AUTH_URL is "${configured}", a localhost address, but this is a Vercel ` +
+        'deployment — ignoring it. Set BETTER_AUTH_URL to your live domain in ' +
+        'Project Settings → Environment Variables.'
+    );
+  }
+
+  return { allowedHosts: [...allowedHosts], protocol: 'auto' as const, fallback };
 }
 
 export const auth = betterAuth({
