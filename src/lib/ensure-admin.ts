@@ -1,5 +1,4 @@
 import { db } from './db';
-import { auth } from './auth';
 
 /**
  * Creates the admin account from ADMIN_EMAIL / ADMIN_PASSWORD (see .env.local)
@@ -72,6 +71,9 @@ export async function ensureAdminUser(): Promise<void> {
     const existing = (result.rows[0] as { id: string; role: string } | undefined);
 
     if (!existing) {
+      // Imported lazily so a missing BETTER_AUTH_SECRET can't stop the schema
+      // above from being created (see src/lib/admin-env.ts).
+      const { auth } = await import('./auth');
       // Use Better Auth's internal signUp to hash the password correctly
       const signUpResult = await auth.api.signUpEmail({ body: { email, password, name } });
       const userId = (signUpResult as { user?: { id: string } } | null)?.user?.id;

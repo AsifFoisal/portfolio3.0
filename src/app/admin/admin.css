@@ -39,6 +39,74 @@
   color: var(--accent, #ff4c4e);
 }
 
+/* ---------- Missing environment variables ---------- */
+
+.admin-setup-card {
+  width: min(560px, 100%);
+}
+
+.admin-setup-lead {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #4a4a4a;
+}
+
+.admin-setup-list {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-setup-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  background: #fff5f5;
+  border: 1px solid #ffd9d9;
+  border-left: 3px solid var(--accent, #ff4c4e);
+  border-radius: 12px;
+}
+
+.admin-setup-key {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b3261e;
+  word-break: break-all;
+}
+
+.admin-setup-problem {
+  font-size: 13px;
+  color: #7a2020;
+}
+
+.admin-setup-fix {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #5a5a5a;
+}
+
+.admin-setup-note {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #6b6b6b;
+}
+
+.admin-setup-note code,
+.admin-setup-fix code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  padding: 1px 5px;
+  background: #f0f0f0;
+  border-radius: 5px;
+}
+
 /* ---------- Shared bits ---------- */
 
 .admin-eyebrow {
