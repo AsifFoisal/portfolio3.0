@@ -1,4 +1,10 @@
 import { createHash } from 'node:crypto';
+import {
+  deliveryTransformation,
+  isCloudinaryDeliveryUrl,
+  withTransformation,
+  type CloudinaryResourceType,
+} from './cloudinary-url';
 
 /**
  * Cloudinary integration for the admin media uploader.
@@ -12,9 +18,12 @@ import { createHash } from 'node:crypto';
  * server-signed payload, so large files never pass through the app server, and
  * every asset is delivered through an optimization transformation
  * (`f_auto,q_auto`) to cut file size without a visible quality loss.
+ *
+ * URL rewriting lives in `./cloudinary-url` so client components can resize
+ * images without bundling the signing code above.
  */
 
-export type CloudinaryResourceType = 'image' | 'video';
+export type { CloudinaryResourceType };
 
 export type CloudinaryConfig = {
   cloudName: string;
@@ -77,9 +86,7 @@ export function uploadEndpoint(config: CloudinaryConfig, type: CloudinaryResourc
  *   - `c_limit,w_*` → downscales oversized media only, never upscales
  */
 export function optimizedTransformation(type: CloudinaryResourceType): string {
-  return type === 'video'
-    ? 'f_auto,q_auto:good,vc_auto,c_limit,w_1920'
-    : 'f_auto,q_auto:good,c_limit,w_2400';
+  return deliveryTransformation(type, type === 'video' ? 1920 : 2400);
 }
 
 /**
@@ -89,14 +96,9 @@ export function optimizedTransformation(type: CloudinaryResourceType): string {
  * after the `<type>/upload/` segment.
  */
 export function optimizedDeliveryUrl(secureUrl: string, type: CloudinaryResourceType): string {
-  const marker = `/${type}/upload/`;
-  const index = secureUrl.indexOf(marker);
-  if (index === -1) return secureUrl;
-
-  const head = secureUrl.slice(0, index + marker.length);
-  const tail = secureUrl.slice(index + marker.length);
-  if (tail.startsWith(optimizedTransformation(type))) return secureUrl;
-  return `${head}${optimizedTransformation(type)}/${tail}`;
+  if (!isCloudinaryDeliveryUrl(secureUrl)) return secureUrl;
+  if (secureUrl.includes(optimizedTransformation(type))) return secureUrl;
+  return withTransformation(secureUrl, type, optimizedTransformation(type));
 }
 
 export type UploadSignature =

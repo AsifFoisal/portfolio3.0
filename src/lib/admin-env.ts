@@ -38,15 +38,42 @@ export function isAuthConfigured(): boolean {
   return Boolean(process.env.DATABASE_URL?.trim()) && secret !== '' && secret !== DEFAULT_SECRET;
 }
 
+/** Hostname of a connection string, or undefined if it isn't parseable. */
+function databaseHost(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  try {
+    return new URL(value).hostname || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The direct host (`db.<ref>.supabase.co`) resolves to IPv6 only, which
+ * serverless functions cannot reach — the classic "works locally, times out in
+ * production" Supabase mistake. Detected from the URL so the answer is immediate
+ * instead of a DNS failure several seconds later.
+ */
+function isDirectSupabaseHost(host: string | undefined): boolean {
+  return Boolean(host && /^db\.[a-z0-9-]+\.supabase\.co$/i.test(host));
+}
+
 /** Every blocking misconfiguration, ready to render as a setup checklist. */
 export function getAdminEnvIssues(): AdminEnvIssue[] {
   const issues: AdminEnvIssue[] = [];
 
-  if (!process.env.DATABASE_URL?.trim()) {
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+  if (!databaseUrl) {
     issues.push({
       key: 'DATABASE_URL',
       problem: 'not set',
       fix: 'Add the PostgreSQL connection string for your Supabase project (Project → Connect → pooler host).',
+    });
+  } else if (process.env.VERCEL && isDirectSupabaseHost(databaseHost(databaseUrl))) {
+    issues.push({
+      key: 'DATABASE_URL',
+      problem: `points at ${databaseHost(databaseUrl)}, the direct Supabase host — it is IPv6-only and cannot be resolved from serverless functions`,
+      fix: 'Use the connection-pooling string instead: Supabase → Connect → Connection pooling, host …pooler.supabase.com, port 6543.',
     });
   }
 

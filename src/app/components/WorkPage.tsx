@@ -25,10 +25,24 @@ import {
 } from "./Icons";
 import { useSiteContent } from "../data/content-context";
 import type { WorkProject } from "../data/content-types";
+import {
+  deliverySrcSet,
+  isCloudinaryDeliveryUrl,
+  resizedDeliveryUrl,
+} from "@/lib/cloudinary-url";
 
 /* ------------------------------------------------------------------ */
 /* Data                                                                */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Delivery widths per usage. Cards render at 35–46vw (92vw on phones) and hero
+ * thumbnails at 3–10vw, so shipping one 2400px render to every viewport wastes
+ * bandwidth and delays the first paint that actually matters.
+ */
+const CARD_WIDTHS = [640, 960, 1280, 1600, 2000] as const;
+const CARD_MAX_WIDTH = 1600;
+const HERO_THUMB_WIDTH = 600;
 
 type Align = "l" | "r" | "c";
 type ArtKey = keyof typeof ART;
@@ -281,20 +295,36 @@ const makeArt = (k: ArtKey, w: number, h: number) => {
 };
 
 /* Card artwork / image */
-function CardVisual({ p }: { p: Project }) {
+function CardVisual({ p, priority }: { p: Project; priority: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (p.image || !ref.current) return;
     const c = ref.current;
     c.width = 780;
     c.height = 545;
-    const x = c.getContext("2d")!;
-    ART[p.art](x);
+    ART[p.art](c.getContext("2d")!);
   }, [p]);
 
   if (p.image) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img className="vis" src={p.image} alt={p.title} crossOrigin="anonymous" />;
+    // `crossOrigin` matches the WebGL texture loader in the hero, so the two
+    // consumers share one cached download instead of fetching the image twice.
+    const src = isCloudinaryDeliveryUrl(p.image)
+      ? resizedDeliveryUrl(p.image, "image", CARD_MAX_WIDTH)
+      : p.image;
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        className="vis"
+        src={src}
+        srcSet={deliverySrcSet(p.image, CARD_WIDTHS)}
+        sizes={`(max-width: 760px) 92vw, ${p.width}vw`}
+        alt={p.title}
+        crossOrigin="anonymous"
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
+        decoding="async"
+      />
+    );
   }
   return <canvas ref={ref} className="vis" />;
 }
@@ -510,25 +540,40 @@ export default function WorkPage() {
         thumbs.forEach((m, i) => {
           const mat = m.material as THREE.MeshBasicMaterial;
           const p = ps.length ? ps[i % ps.length] : null;
-          mat.map?.dispose(); mat.map = null; mat.color.set(0x0b0b10);
-          if (p && p.image) {
+
+          // Paint the project's card artwork straight away. Waiting for the
+          // photo used to leave a near-black square in the hero for as long as
+          // the image took to download.
+          mat.map?.dispose();
+          mat.map = new THREE.CanvasTexture(makeArt(p ? p.art : FB[i % FB.length], 320, 224));
+          mat.color.set(0xffffff);
+          mat.needsUpdate = true;
+
+          if (p?.image) {
+            const src = isCloudinaryDeliveryUrl(p.image)
+              ? resizedDeliveryUrl(p.image, "image", HERO_THUMB_WIDTH)
+              : p.image;
             const loader = new THREE.TextureLoader();
             loader.setCrossOrigin("anonymous");
-            loader.load(p.image, (t) => { mat.map = t; mat.color.set(0xffffff); mat.needsUpdate = true; });
-          } else {
-            mat.map = new THREE.CanvasTexture(makeArt(p ? p.art : FB[i % FB.length], 320, 224));
-            mat.color.set(0xffffff);
+            loader.load(src, (t) => {
+              mat.map?.dispose();
+              mat.map = t;
+              mat.color.set(0xffffff);
+              mat.needsUpdate = true;
+            });
           }
-          mat.needsUpdate = true;
         });
         // card reveal animations
         ctx?.revert();
         ctx = gsap.context(() => {
           document.querySelectorAll<HTMLElement>(".item").forEach((it) => {
             const card = it.querySelector<HTMLElement>(".card")!, vis = card.firstElementChild!;
-            gsap.from(card, { opacity: 0, y: 90, filter: "brightness(.15)", duration: 1.4, ease: "power3.out", scrollTrigger: { trigger: card, start: "top 82%" } });
+            // The reveal used to start at 82% of the viewport and run for 1.4s,
+            // so a card that was already downloaded still looked like it was
+            // loading. Start as soon as the card enters and resolve faster.
+            gsap.from(card, { opacity: 0, y: 60, filter: "brightness(.45)", duration: 0.85, ease: "power3.out", scrollTrigger: { trigger: card, start: "top 94%" } });
             gsap.fromTo(vis, { scale: 1.16 }, { scale: 1, ease: "none", scrollTrigger: { trigger: card, start: "top bottom", end: "bottom top", scrub: true } });
-            gsap.from(it.querySelectorAll(".meta h3,.meta p,.go"), { opacity: 0, y: 24, duration: 1, stagger: 0.09, ease: "power3.out", scrollTrigger: { trigger: it.querySelector(".meta"), start: "top 92%" } });
+            gsap.from(it.querySelectorAll(".meta h3,.meta p,.go"), { opacity: 0, y: 24, duration: 0.7, stagger: 0.07, ease: "power3.out", scrollTrigger: { trigger: it.querySelector(".meta"), start: "top 96%" } });
           });
         }, list);
         requestAnimationFrame(() => { ScrollTrigger.refresh(); build(); });
@@ -720,7 +765,7 @@ export default function WorkPage() {
                 style={{ width: `${p.width}vw` }}
                 {...(p.liveUrl ? { target: "_blank", rel: "noreferrer" } : {})}
               >
-                <CardVisual p={p} />
+                <CardVisual p={p} priority={i < 3} />
               </a>
               <div className="meta" style={{ width: `${p.width}vw`, margin }}>
                 <div>
@@ -986,7 +1031,8 @@ export default function WorkPage() {
           overflow: hidden;
           aspect-ratio: 780 / 545;
           cursor: none;
-          background: #07070b;
+          /* Never a flat black hole while the artwork/image arrives. */
+          background: linear-gradient(145deg, #12121a 0%, #07070b 55%, #0d0d14 100%);
         }
         .card .vis {
           position: absolute;
