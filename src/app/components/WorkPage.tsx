@@ -416,7 +416,24 @@ export default function WorkPage() {
 
       const thumbs = TH.map((a) => {
         const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: null, transparent: true }));
-        m.userData = { x: a[1], y: a[2], w: a[3], z: a[4], k: a[0] };
+        // Each thumbnail wanders: it eases toward a random point in its area,
+        // then picks a new one — organic drifting with varied speed.
+        const ax = 0.035 + Math.random() * 0.045;
+        const ay = 0.03 + Math.random() * 0.04;
+        const a0 = Math.random() * Math.PI * 2;
+        const r0 = Math.sqrt(Math.random());
+        m.userData = {
+          x: a[1], y: a[2], w: a[3], z: a[4], k: a[0],
+          dp: {
+            ax,
+            ay,
+            cx: 0,
+            cy: 0,
+            tx: Math.cos(a0) * r0 * ax,
+            ty: Math.sin(a0) * r0 * ay,
+            vx: 0.008 + Math.random() * 0.009,
+          },
+        };
         scene.add(m);
         return m;
       });
@@ -487,11 +504,22 @@ export default function WorkPage() {
           const d = m.userData;
           const q = clamp((HP - (ORDER[i] / n) * 0.86) / 0.14), e = q * q * (3 - 2 * q);
           fill += e;
-          let x = d.x * W + Math.sin(t * 0.6 + i) * 7 + mx * d.z * 30;
-          let y = d.y * H + Math.cos(t * 0.5 + i * 1.3) * 6 + my * d.z * 20;
+          const dv = d.dp;
+          // wander: ease toward the target, pick a new one once it is close —
+          // natural speed-ups / pauses instead of a repeating sine loop.
+          dv.cx += (dv.tx - dv.cx) * dv.vx;
+          dv.cy += (dv.ty - dv.cy) * dv.vx;
+          if (Math.hypot(dv.tx - dv.cx, dv.ty - dv.cy) < 0.012) {
+            const a = Math.random() * Math.PI * 2;
+            const rr = Math.sqrt(Math.random());
+            dv.tx = Math.cos(a) * rr * dv.ax;
+            dv.ty = Math.sin(a) * rr * dv.ay;
+          }
+          let x = d.x * W + dv.cx * W + Math.sin(t * 0.6 + i) * 4 + mx * d.z * 30;
+          let y = d.y * H + dv.cy * H + Math.cos(t * 0.5 + i * 1.3) * 3 + my * d.z * 20;
           x += (W / 2 - x) * e; y += (H * 0.4 - y) * e;
           m.position.set(x, -(sc + y), 1);
-          const s = d.w * W * (1 - 0.88 * e);
+          const s = d.w * W * 1.45 * (1 - 0.88 * e);
           m.scale.set(s, s / 1.43, 1);
           const mat = m.material as THREE.MeshBasicMaterial;
           mat.opacity = (0.62 + 0.38 * Math.sin(t * 0.5 + i * 2)) * (1 - Math.pow(e, 6));

@@ -164,8 +164,8 @@
   "services": {
     "eyebrow": "MY SERVICES",
     "heading": {
-      "text": "SERVICES I OFFER",
-      "accent": ""
+      "text": "SERVICES I",
+      "accent": "OFFER"
     },
     "callLabel": "Book a Call",
     "items": [

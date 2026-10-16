@@ -12,7 +12,6 @@ import ContactForm from './ContactForm';
 import TiltedCard from './TiltedCard';
 import TechText from './TechText';
 import FlyingPosters from './FlyingPosters';
-import CircularCarousel from './CircularCarousel';
 import ScrollStack, { ScrollStackItem } from './ScrollStack';
 import SiteFooter from './SiteFooter';
 import SiteNav from './SiteNav';
@@ -247,16 +246,12 @@ function ServiceCard({ service, index, isOpen, onToggle }: { service: Service; i
   return (
     <article
       className={`service-item ${isOpen ? 'is-open' : ''} ${hovering ? 'service-item-cursor-active' : ''}`}
-      onMouseEnter={(event) => { setHovering(true); trackPointer(event); }}
       onMouseMove={trackPointer}
       onMouseLeave={() => setHovering(false)}
     >
       <motion.span
         className="service-view-cursor"
         style={{ x: cursorX, y: cursorY }}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: hovering ? 1 : 0, scale: hovering ? 1 : 0.8 }}
-        transition={{ duration: 0.2 }}
         aria-hidden="true"
       >
         VIEW
@@ -265,7 +260,7 @@ function ServiceCard({ service, index, isOpen, onToggle }: { service: Service; i
       <div className="service-panel" id={`service-panel-${index}`} role="region" aria-labelledby={`service-toggle-${index}`} inert={!isOpen}>
         <div className="service-panel-clip"><div className="service-details">
           <div className="service-description"><p>{service.description}</p><div className="service-tags">{service.tags.map((tag, tagIndex) => <span key={`${tag}-${tagIndex}`}>{tag}</span>)}</div></div>
-          <div className="service-media" aria-hidden="true">
+          <div className="service-media" aria-hidden="true" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
             <div>{service.imageLeft && <Image src={service.imageLeft} alt="" width={720} height={540} sizes="(max-width: 800px) 45vw, 320px" loading="lazy" />}</div>
             <div>{service.imageRight && <Image src={service.imageRight} alt="" width={720} height={540} sizes="(max-width: 800px) 45vw, 320px" loading="lazy" />}</div>
           </div>
@@ -332,13 +327,13 @@ function FeaturedWorks() {
   );
 }
 
-const titleCls = 'whitespace-nowrap uppercase leading-none font-medium tracking-[-0.03em]';
+const titleCls = 'whitespace-nowrap uppercase leading-none font-semibold tracking-[-0.03em]';
 
 /**
  * Visual stories — a scroll-scrubbed expanding video box (motion port of the
- * GSAP reference): the box grows from a small strip to the full viewport while
- * the video zooms out, side titles slide up once on approach, and the caption
- * fades in near the end. Mobile shows a static aspect-video box.
+ * GSAP reference): the box grows from a small strip while the video zooms out,
+ * side titles slide up once on approach, and the caption fades in near the end.
+ * Mobile shows a static aspect-video box.
  */
 function Stories() {
   const content = useSiteContent();
@@ -359,7 +354,7 @@ function Stories() {
   return (
     <section className="relative bg-white" id="stories" aria-label="Visual stories">
       <div className="stories-track relative lg:h-[280vh]" ref={trackRef}>
-        <div className="relative flex flex-col items-center gap-6 pb-[100px] lg:sticky lg:top-0 lg:h-screen lg:justify-center lg:overflow-hidden lg:pb-0">
+        <div className="stories-stage relative z-[5] flex flex-col items-center gap-6 pb-[100px] lg:sticky lg:top-0 lg:h-screen lg:justify-center lg:overflow-hidden lg:pb-0">
           <div className="overflow-hidden lg:hidden">
             <h2 className={`${titleCls} text-[clamp(64px,17vw,130px)]`}>{stories.mobileTitleTop}</h2>
           </div>
@@ -372,12 +367,12 @@ function Stories() {
 
             <div className="absolute inset-y-0 right-[calc(100%+40px)] hidden items-center lg:flex">
               <div className="overflow-hidden">
-                <motion.h2 className={`stories-side-title ${titleCls} text-[clamp(80px,9vw,150px)]`} style={{ y: visualY }}>{stories.mobileTitleTop}</motion.h2>
+                <motion.h2 className={`stories-side-title ${titleCls} text-[clamp(64px,7.2vw,110px)]`} style={{ y: visualY }}>{stories.mobileTitleTop}</motion.h2>
               </div>
             </div>
             <div className="absolute inset-y-0 left-[calc(100%+10px)] hidden items-center lg:flex">
               <div className="overflow-hidden">
-                <motion.h2 className={`stories-side-title ${titleCls} text-[clamp(80px,9vw,150px)]`} style={{ y: storiesY }}>{stories.mobileTitleBottom}</motion.h2>
+                <motion.h2 className={`stories-side-title ${titleCls} text-[clamp(64px,7.2vw,110px)]`} style={{ y: storiesY }}>{stories.mobileTitleBottom}</motion.h2>
               </div>
             </div>
 
@@ -423,7 +418,11 @@ function Testimonials() {
         : testimonial.avatar,
   }));
   const rootRef = useRef<HTMLElement>(null);
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState(() => {
+    // Every visit opens on the middle reviewer; the timer walks the rest.
+    const start = testimonials.findIndex((t) => t.name === 'Al Amin Mun');
+    return start >= 0 ? start : 0;
+  });
   const [inView, setInView] = useState(false);
   const [paused, setPaused] = useState(false);
 
@@ -444,7 +443,7 @@ function Testimonials() {
       <div className="mx-auto flex max-w-[1080px] flex-col items-center text-center" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
         <p className="eyebrow">{content.testimonials.eyebrow}</p>
 
-        <span aria-hidden="true" className="mt-10 h-[70px] text-[140px] leading-[0.9] text-[#ff4c4e] lg:h-[90px] lg:text-[180px]">&ldquo;</span>
+        <Image aria-hidden="true" src="/images/quote-mark.png" alt="" width={64} height={46} className="mt-10 mb-10 h-[32px] w-auto lg:h-[44px]" />
 
         <div aria-live="polite" className="flex min-h-[210px] w-full items-start justify-center sm:min-h-[180px] lg:min-h-[170px]">
           <motion.blockquote key={active} initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }} className="text-[clamp(24px,3.2vw,44px)] font-medium leading-[1.2] tracking-[-0.025em] text-balance">
@@ -467,15 +466,22 @@ function Testimonials() {
 
         <div className="mt-12 flex flex-wrap items-center justify-center gap-2 md:gap-3">
           {testimonials.map((person, i) => (
-            <button key={person.name} type="button" onClick={() => setActive(i)} aria-label={`Show review from ${person.name}`} aria-pressed={i === active}
-              className={cn('flex items-center gap-3 rounded-full p-1.5 transition-all duration-500 md:pr-5', i === active ? 'bg-[#f1f1f1]' : 'opacity-50 hover:opacity-100')}>
-              <Image src={person.avatar} alt="" width={44} height={44} loading="lazy" style={{ objectPosition: person.position }}
-                className={cn('size-11 rounded-full object-cover ring-2 transition-all duration-500', i === active ? 'ring-[#ff4c4e]' : 'ring-transparent grayscale')} />
-              <span className="hidden text-left text-sm font-semibold leading-tight md:block">
-                {person.name}
-                <span className="block text-xs font-medium text-[#555555]/70">{person.company || person.role}</span>
-              </span>
-            </button>
+            <motion.div
+              key={person.name}
+              initial={{ opacity: 0, y: 18 }}
+              animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+              transition={{ duration: 0.55, delay: 0.15 + 0.12 * Math.abs(i - (testimonials.length - 1) / 2), ease: [0.16, 1, 0.3, 1] }}
+            >
+              <button type="button" onClick={() => setActive(i)} aria-label={`Show review from ${person.name}`} aria-pressed={i === active}
+                className={cn('flex items-center gap-3 rounded-full p-1.5 transition-all duration-500 md:pr-5', i === active ? 'bg-[#f1f1f1]' : 'opacity-50 hover:opacity-100')}>
+                <Image src={person.avatar} alt="" width={44} height={44} loading="lazy" style={{ objectPosition: person.position }}
+                  className={cn('size-11 rounded-full object-cover ring-2 transition-all duration-500', i === active ? 'ring-[#ff4c4e]' : 'ring-transparent grayscale')} />
+                <span className="hidden text-left text-sm font-semibold leading-tight md:block">
+                  {person.name}
+                  <span className="block text-xs font-medium text-[#555555]/70">{person.company || person.role}</span>
+                </span>
+              </button>
+            </motion.div>
           ))}
         </div>
 
@@ -643,22 +649,7 @@ export default function Portfolio({ content }: { content: SiteContent }) {
 
         <Stories />
 
-        <HelixRibbon />
-
-        <section className="latest-section" id="latest-works" aria-label="Latest design works">
-          <div className="latest-carousel">
-            <CircularCarousel
-              items={content.latest.items}
-              preset="cylinder"
-              intro="rise"
-              cardWidth={220}
-              speed={14}
-              captions
-              fadeColor="#000000"
-              onItemClick={(_item, index) => setOverlay({ kind: 'gallery', index })}
-            />
-          </div>
-        </section>
+        <HelixRibbon onCarouselItemClick={(_item, index) => setOverlay({ kind: 'gallery', index })} />
 
         <div className="page-width side-rails approach-and-experience">
           <section className="approach-section" id="approach" aria-labelledby="approach-title">

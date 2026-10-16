@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useSiteContent } from '../data/content-context';
+import CircularCarousel from './CircularCarousel';
 import type {
   WebGLRenderer,
   Scene,
@@ -33,7 +34,7 @@ const styles = `
     width: 99.99%;
     height: 100vh;
     background: #000;
-    overflow-x: hidden; 
+    overflow: hidden; 
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     z-index: 5;
@@ -80,6 +81,20 @@ const styles = `
     overflow: hidden;
     text-overflow: clip;
   }
+
+  /* The circular carousel waits hidden under the ribbon canvas. When the sweep
+     and text slide finish it rises bottom-to-top onto the pinned black stage
+     (GSAP timeline fired from renderTick). */
+  .trionn-ribbon-root .ribbon-carousel {
+    position: absolute;
+    inset: 0;
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+  }
 `;
 
 /* ==================== HELPERS ==================== */
@@ -97,7 +112,7 @@ function loadScript(src: string): Promise<void> {
 }
 
 /* ==================== COMPONENT ==================== */
-export default function TrionnRibbon() {
+export default function TrionnRibbon({ onCarouselItemClick }: { onCarouselItemClick?: (item: unknown, index: number) => void }) {
   const content = useSiteContent();
   const heading = content.latest.heading;
   const wordB = (heading.suffix ?? '').trim();
@@ -158,6 +173,10 @@ export default function TrionnRibbon() {
 
         // Scroll distance for the single pass
         const totalScroll = 3500;
+
+        // Extra pinned scroll after the carousel lands: the stage holds on the
+        // carousel for this distance before the pin releases.
+        const HOLD_SCROLL = 1200;
 
         const CARD_W = 1.9;
         const CARD_H = (CARD_W * 712) / 1024;
@@ -226,7 +245,7 @@ export default function TrionnRibbon() {
             if (alpha <= 0.0) discard;
             if (!gl_FrontFacing && uBackMode > 0.5) discard;
             vec3 col = texture2D(map, vUv).rgb;
-            gl_FragColor = vec4(col, alpha);
+            gl_FragColor = vec4(col, 1.0);
           }
         `;
 
@@ -469,7 +488,7 @@ export default function TrionnRibbon() {
             },
             vertexShader: vertSrc,
             fragmentShader: fragSrc,
-            transparent: true,
+            transparent: false,
             side: THREE.DoubleSide,
           });
           const m: Mesh = new THREE.Mesh(planeGeo, mat);
@@ -557,6 +576,7 @@ export default function TrionnRibbon() {
 
         /* ==================== SCROLL TRIGGER ==================== */
         const section = rootRef.current;
+        let rawProgress = 0;
         let scrollProgress = 0;
 
         ScrollTrigger.refresh();
@@ -564,11 +584,14 @@ export default function TrionnRibbon() {
         const st = ScrollTrigger.create({
           trigger: section,
           start: 'top top',
-          end: `+=${totalScroll}`,
+          end: `+=${totalScroll + HOLD_SCROLL}`,
           pin: true,
           anticipatePin: 1,
           onUpdate: (self: ScrollTriggerInstance) => {
-            scrollProgress = self.progress;
+            rawProgress = self.progress;
+            // The sweep consumes the first totalScroll px; the remainder is
+            // hold time that keeps the carousel on screen before unpinning.
+            scrollProgress = Math.min(1, (rawProgress * (totalScroll + HOLD_SCROLL)) / totalScroll);
             renderTick();
           },
         });
@@ -576,18 +599,73 @@ export default function TrionnRibbon() {
         /* ==================== HEADLINE PARALLAX ==================== */
         const wordA = rootRef.current.querySelector('.word-a') as HTMLElement | null;
         const wordB = rootRef.current.querySelector('.word-b') as HTMLElement | null;
+        const carouselHost = rootRef.current.querySelector('.ribbon-carousel') as HTMLElement | null;
 
         function updateHeadline(): void {
           const p = scrollProgress;
-          const driftMax = Math.min(window.innerWidth * 0.4, 560);
-          // Both words start centered so nothing is clipped at rest, then they
-          // drift apart as the section scrolls.
-          const xA = p * driftMax;
-          const xB = -p * driftMax;
-          const yA = -p * window.innerHeight * 0.08;
-          const yB = p * window.innerHeight * 0.06;
-          if (wordA) wordA.style.transform = `translate3d(${xA}px, ${yA}px, 0)`;
-          if (wordB) wordB.style.transform = `translate3d(${xB}px, ${yB}px, 0)`;
+          const vw = window.innerWidth;
+          const wA = wordA?.offsetWidth ?? 0;
+          const wB = wordB?.offsetWidth ?? 0;
+          // The lines are flex-centred, so their resting left edge is
+          // (vw - w) / 2. Travelling the full (vw + w) distance from +half to
+          // -half takes each line fully past both viewport edges, crossing in
+          // opposite directions in lock-step with the ribbon sweep.
+          const halfA = (vw + wA) / 2;
+          const halfB = (vw + wB) / 2;
+          const xA = halfA - p * halfA * 2;
+          const xB = -halfB + p * halfB * 2;
+          if (wordA) wordA.style.transform = `translate3d(${xA}px, 0, 0)`;
+          if (wordB) wordB.style.transform = `translate3d(${xB}px, 0, 0)`;
+        }
+
+        /* ==================== CAROUSEL TAKEOVER ==================== */
+        // When the sweep and text slide finish the carousel rises bottom-to-
+        // top onto the pinned black stage; the pin holds for HOLD_SCROLL more
+        // before releasing. Scrolling back up plays the mirror move — the
+        // feed sinks top-to-bottom — and re-enters on the next pass down.
+        let carouselShown = false;
+
+        function sinkCarousel(): void {
+          if (!carouselHost) return;
+          carouselShown = false;
+          gsap.killTweensOf(carouselHost);
+          // Scrolling upward mirror: the feed sinks top-to-bottom.
+          gsap.to(carouselHost, {
+            yPercent: 100,
+            opacity: 0,
+            duration: 0.9,
+            ease: 'power2.in',
+            onComplete: () => {
+              carouselHost.style.pointerEvents = 'none';
+            },
+          });
+          host.style.pointerEvents = 'auto';
+        }
+
+        function updateCarousel(): void {
+          if (!carouselHost) return;
+          if (!carouselShown && rawProgress >= 0.83) {
+            carouselShown = true;
+            gsap.killTweensOf(carouselHost);
+            host.style.pointerEvents = 'none';
+            carouselHost.style.pointerEvents = 'none';
+            gsap.fromTo(
+              carouselHost,
+              { yPercent: 100, opacity: 0 },
+              {
+                yPercent: 0,
+                opacity: 1,
+                duration: 1.2,
+                ease: 'power3.out',
+                onComplete: () => {
+                  carouselHost.style.pointerEvents = 'auto';
+                },
+              }
+            );
+          }
+          if (carouselShown && scrollProgress < 0.9) {
+            sinkCarousel();
+          }
         }
 
         /* ==================== renderTick ==================== */
@@ -621,6 +699,7 @@ export default function TrionnRibbon() {
               cur + (target - cur) * hoverLerpK;
           }
           updateHeadline();
+          updateCarousel();
         }
 
         /* ==================== WARM-UP ==================== */
@@ -712,7 +791,19 @@ export default function TrionnRibbon() {
   return (
     <>
       <style>{styles}</style>
-      <div ref={rootRef} className="trionn-ribbon-root">
+      <div ref={rootRef} className="trionn-ribbon-root" id="latest-works">
+        <div className="ribbon-carousel">
+          <CircularCarousel
+            items={content.latest.items}
+            preset="cylinder"
+            intro="rise"
+            cardWidth={220}
+            speed={14}
+            captions
+            fadeColor="#000000"
+            onItemClick={onCarouselItemClick}
+          />
+        </div>
         <div className="headline">
           <h1 className="word-a">{heading.text}{heading.accent ? <>{' '}<span className="accent-word">{heading.accent}</span></> : null}</h1>
           {wordB ? <h1 className="word-b">{wordB}</h1> : null}

@@ -25,11 +25,11 @@
   /* The accent word in section headings ("About ME", "LATEST DESIGN WORKS"…). */
   --quiet-word: #bebebe;
   /*
-    Left/right layout rails. They sit 10px outside the centred content column on
-    wide screens, and retreat into the page gutter once the column fills the
-    viewport (`max(0px, …)`) so they never cross the content at any width.
+    Left/right layout rails. They hug the viewport edges on narrow screens so
+    the rails keep pace with the full-bleed story video, and sit 4px outside
+    the centred 80rem column on wide screens.
   */
-  --rail-x: calc(max(0px, (100% - 80rem) / 2) + clamp(16px, 2.6vw, 44px) - 10px);
+  --rail-x: calc(max(0px, (100% - 80rem) / 2) + 4px);
 }
 
 
@@ -184,6 +184,7 @@ p {
   background: #fafafa;
   border-radius: 50%;
   color: #323b44;
+  box-shadow: 0 2px 8px rgba(50, 59, 68, 0.1);
   transition: transform 250ms, color 200ms, background 200ms;
 }
 
@@ -195,6 +196,7 @@ p {
   width: calc(24 * var(--unit));
   height: auto;
   display: block;
+  color: var(--accent);
 }
 
 .menu-button span {
@@ -868,14 +870,19 @@ p {
 
 .featured-section,
 .services-section,
-#stories,
 .latest-section,
 .experience-list {
   position: relative;
   z-index: 2;
 }
 
-#stories,
+/* The stories stage sits above the global rails (z 4) so the expanding video
+   feed slides over the rail lines, while the lines still run across the
+   section's own background. */
+#stories {
+  position: relative;
+}
+
 .latest-section,
 .experience-list {
   z-index: 5;
@@ -945,6 +952,7 @@ p {
 }
 
 .view-all {
+  position: relative;
   display: flex;
   align-items: center;
   gap: calc(12 * var(--unit));
@@ -955,13 +963,35 @@ p {
   transition: color 200ms;
 }
 
+.view-all::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 1px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 300ms ease;
+}
+
 .view-all:hover {
   color: var(--accent);
+}
+
+.view-all:hover::after {
+  transform: scaleX(1);
 }
 
 .view-all svg {
   width: calc(18 * var(--unit));
   height: calc(18 * var(--unit));
+  transition: transform 300ms ease;
+}
+
+.view-all:hover svg {
+  transform: translate(3px, -3px);
 }
 
 .featured-heading {
@@ -1150,6 +1180,10 @@ p {
   margin-top: calc(10 * var(--unit));
 }
 
+.services-heading .section-title>span {
+  color: #2020204d;
+}
+
 .services-heading .call-button {
   margin-top: calc(17 * var(--unit));
 }
@@ -1187,7 +1221,15 @@ p {
   font-size: calc(12 * var(--unit));
   font-weight: 650;
   letter-spacing: calc(1 * var(--unit));
+  opacity: 0;
+  scale: 0.8;
+  transition: opacity 200ms, scale 200ms;
   pointer-events: none;
+}
+
+.service-item-cursor-active .service-view-cursor {
+  opacity: 1;
+  scale: 1;
 }
 
 .service-item:not(.is-open):hover,
@@ -1349,8 +1391,24 @@ p {
   transform: rotate(45deg);
 }
 
-.service-item.is-open .service-toggle-icon span {
-  background: var(--accent);
+.service-item.is-open:nth-child(1) .service-toggle-icon span {
+  background: #df2f31d6;
+}
+
+.service-item.is-open:nth-child(2) .service-toggle-icon span {
+  background: #04926a;
+}
+
+.service-item.is-open:nth-child(3) .service-toggle-icon span {
+  background: #bd3911;
+}
+
+.service-item.is-open:nth-child(4) .service-toggle-icon span {
+  background: #e89146;
+}
+
+.service-item.is-open:nth-child(5) .service-toggle-icon span {
+  background: #638505;
 }
 
 .service-item.is-open .service-panel {
@@ -1360,7 +1418,7 @@ p {
 }
 
 .service-item.is-open:nth-child(1) {
-  background: #ff4c4e;
+  background: #df2f31d6;
 }
 
 .service-item.is-open:nth-child(2) {
@@ -1397,32 +1455,6 @@ p {
   .stories-video {
     transform: none !important;
   }
-}
-
-.latest-section {
-  padding-top: calc(40 * var(--unit));
-  padding-bottom: calc(140 * var(--unit));
-  overflow: hidden;
-  background: #000;
-}
-
-.latest-section>h2 {
-  text-align: center;
-  font-size: calc(64 * var(--unit));
-  line-height: 1.2;
-  font-weight: 700;
-  letter-spacing: calc(-2.4 * var(--unit));
-  color: #fff;
-}
-
-.latest-section>h2 span {
-  color: var(--quiet-word);
-}
-
-.latest-carousel {
-  position: relative;
-  height: calc(560 * var(--unit));
-  margin-top: calc(40 * var(--unit));
 }
 
 .approach-and-experience {
@@ -1589,11 +1621,11 @@ p {
 }
 
 .experience-stack .experience-header p {
-  font-size: calc(22 * var(--unit));
+  font-size: 18px;
 }
 
 .experience-stack .experience-header h3 {
-  font-size: calc(60 * var(--unit));
+  font-size: 32px;
 }
 
 .experience-stack .experience-company {
@@ -1601,7 +1633,7 @@ p {
 }
 
 .experience-stack .experience-company h4 {
-  font-size: calc(42 * var(--unit));
+  font-size: 28px;
 }
 
 .experience-stack .experience-detail-surface {
@@ -1617,7 +1649,7 @@ p {
 }
 
 .experience-stack .experience-details ol {
-  font-size: calc(22 * var(--unit));
+  font-size: 16px;
   line-height: 1.55;
 }
 
@@ -2532,16 +2564,6 @@ p {
     padding-bottom: 80px;
   }
 
-  .latest-section>h2 {
-    font-size: 5.2vw;
-    letter-spacing: -1.1px;
-  }
-
-  .latest-carousel {
-    height: 420px;
-    margin-top: 35px;
-  }
-
   .approach-and-experience {
     padding-top: 40px;
     padding-bottom: 40px;
@@ -2864,15 +2886,6 @@ p {
 
   .service-media>div {
     height: 80px;
-  }
-
-  .latest-section>h2 {
-    font-size: 5.5vw;
-    letter-spacing: -.8px;
-  }
-
-  .latest-carousel {
-    height: 340px;
   }
 
   .large-heading {

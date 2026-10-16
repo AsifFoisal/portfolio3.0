@@ -9,19 +9,19 @@ import { InstagramIcon, WhatsApp3DIcon, WhatsAppIcon } from './Icons';
 
 function IconBolt() {
   return (
-    <img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-svg@latest/icons/openai.svg" alt="" width="28" height="28" />
+    <img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-svg@latest/icons/openai.svg" alt="" width="22" height="22" />
   );
 }
 
 function IconRotate() {
   return (
-    <img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-svg@latest/icons/grok.svg" alt="" width="28" height="28" />
+    <img src="https://cdn.jsdelivr.net/npm/@lobehub/icons-static-svg@latest/icons/grok.svg" alt="" width="22" height="22" />
   );
 }
 
 function IconDiagram() {
   return (
-    <img src="https://cdn.simpleicons.org/perplexity/111827" alt="" width="28" height="28" />
+    <img src="https://cdn.simpleicons.org/perplexity/111827" alt="" width="22" height="22" />
   );
 }
 
@@ -211,9 +211,9 @@ export default function SiteFooter() {
 
               <div className="footer-services-column flex flex-col justify-start md:col-span-4 lg:col-span-4">
                 <h3 className="footer-services-heading mb-4 text-xl font-bold text-center text-gray-900">{footer.servicesHeading}</h3>
-                <div className="footer-services-list mx-auto flex max-w-xs flex-col">
+                <div className="footer-services-list flex max-w-xs flex-col">
                   {content.services.items.map((service) => (
-                    <a key={service.title} href="#services" className="footer-service-link rounded-lg px-4 py-2.5 text-center text-xs font-medium text-gray-800">
+                    <a key={service.title} href="#services" className="footer-service-link rounded-lg px-4 py-2.5 text-left text-xs font-medium text-gray-800">
                       {service.title}
                     </a>
                   ))}
@@ -239,9 +239,9 @@ export default function SiteFooter() {
                 <div className="space-y-3 pt-1">
                   <p className="text-xs font-semibold tracking-wide text-gray-700">Follow me on social media</p>
                   <div className="flex items-center justify-center space-x-2.5">
-                    <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="icon-circle" title="LinkedIn" aria-label="LinkedIn"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/linkedin.svg" alt="" width="22" height="22" /></a>
-                    <a href="https://behance.net" target="_blank" rel="noreferrer" className="icon-circle" title="Behance" aria-label="Behance"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/behance.svg" alt="" width="24" height="24" /></a>
-                    <a href="https://instagram.com" target="_blank" rel="noreferrer" className="icon-circle" title="Instagram" aria-label="Instagram"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/instagram.svg" alt="" width="24" height="24" /></a>
+                    <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="icon-circle" title="LinkedIn" aria-label="LinkedIn"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/linkedin.svg" alt="" width="18" height="18" /></a>
+                    <a href="https://behance.net" target="_blank" rel="noreferrer" className="icon-circle" title="Behance" aria-label="Behance"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/behance.svg" alt="" width="20" height="20" /></a>
+                    <a href="https://instagram.com" target="_blank" rel="noreferrer" className="icon-circle" title="Instagram" aria-label="Instagram"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/instagram.svg" alt="" width="20" height="20" /></a>
                   </div>
                 </div>
               </div>
