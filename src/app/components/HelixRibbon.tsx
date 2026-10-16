@@ -63,6 +63,10 @@ const styles = `
     max-width: 100vw;
   }
   
+  /* Accent word in the headline ("LATEST DESIGN"): shares the muted word colour
+     used by the other section headings. */
+  .trionn-ribbon-root .headline h1 .accent-word { color: var(--quiet-word); }
+  
   .trionn-ribbon-root .headline h1 {
     font-weight: 600; 
     line-height: .85; 
@@ -96,7 +100,6 @@ function loadScript(src: string): Promise<void> {
 export default function TrionnRibbon() {
   const content = useSiteContent();
   const heading = content.latest.heading;
-  const wordA = [heading.text, heading.accent].filter(Boolean).join(' ').trim();
   const wordB = (heading.suffix ?? '').trim();
   const helixImages = useMemo(
     () => (content.helix?.items ?? []).map((item) => item.image ?? ''),
@@ -704,7 +707,7 @@ export default function TrionnRibbon() {
       <style>{styles}</style>
       <div ref={rootRef} className="trionn-ribbon-root">
         <div className="headline">
-          <h1 className="word-a">{wordA}</h1>
+          <h1 className="word-a">{heading.text}{heading.accent ? <>{' '}<span className="accent-word">{heading.accent}</span></> : null}</h1>
           {wordB ? <h1 className="word-b">{wordB}</h1> : null}
         </div>
         <div id="gl" />

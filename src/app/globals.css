@@ -22,6 +22,8 @@
   --portrait-size: calc(250 * var(--unit));
   --accent: #ff4c4e;
   --quiet: #222222;
+  /* The accent word in section headings ("About ME", "LATEST DESIGN WORKS"…). */
+  --quiet-word: #bebebe;
   /*
     Left/right layout rails. They sit 10px outside the centred content column on
     wide screens, and retreat into the page gutter once the column fills the
@@ -472,7 +474,7 @@ p {
 }
 
 .low-contrast-heading>span {
-  color: #090909;
+  color: var(--quiet-word);
 }
 
 .about {
@@ -1414,7 +1416,7 @@ p {
 }
 
 .latest-section>h2 span {
-  color: #707070;
+  color: var(--quiet-word);
 }
 
 .latest-carousel {
