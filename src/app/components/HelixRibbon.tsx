@@ -135,22 +135,25 @@ export default function TrionnRibbon() {
 
         /* ==================== CONSTANTS ==================== */
         const BACK_MODE: string = 'mirror';
-        const N = 14;
-        const C = 14;
-        const R = 12;
+        const N = 12;
+        const C = 12;
+        const R = 4.2;
 
-        // A *wide* ring, not a small tight coil. The visible slice of a ring is
-        // viewWidth / R of arc, so a big radius is what keeps neighbouring cards
-        // side by side and nearly parallel instead of fanning out into a
-        // scattered collage. It also has to be wide enough that cards still face
-        // the camera at the edges of a wide window: a card at angle a is only
-        // front-facing while sin(a) > R / camZ, so R² / camZ is the half-width of
-        // usable band. With R = 12 the row fills even a 3:1 frame with front
-        // faces. Camera distance and step angle scale with it, which keeps the
-        // framed card size identical.
-        const pitchPerRad = 0.35;
+        // Y_START doubles as a phase control: with a unit pitch the band's
+        // height at any progress is fixed, so this only decides which part of
+        // the coil is nearest the camera mid-sweep. Tuned so the coil's front
+        // point — the most magnified part the dolly closes in on — lands in the
+        // middle of the frame at 50%. Otherwise the push-in magnifies its offset
+        // and shoves the ribbon off the bottom edge.
+        const Y_START = -0.63;
+
+        // One twist (not two): with a shallow pitch the band's far side came
+        // back into frame as a second strand, so the ribbon read as two twists
+        // woven together. A steeper climb lifts that far side out of frame and
+        // leaves a single twisted band crossing the screen.
+        const pitchPerRad = 1.0;
         const DIP_S = 2.0;
-        const DIP_A = 0.5;
+        const DIP_A = 1.2;
         const hoverLerpK = 0.12;
 
         // Scroll distance for the single pass
@@ -158,40 +161,33 @@ export default function TrionnRibbon() {
 
         const CARD_W = 1.9;
         const CARD_H = (CARD_W * 712) / 1024;
-        // Cards tile the ring edge to edge: the angular step is exactly the
-        // card's own arc, so a card's side edges land on the same points as its
-        // neighbours' and the surfaces stay tangent where they meet. The row then
-        // reads as one continuous ribbon rather than a chain of separate tiles.
-        const STEP_ANGLE = CARD_W / R;
-        const STEP_ARC = CARD_W;
+        const CORNER_R = 0.08;
+        const SEAM = 0.04;
+        const STEP_ANGLE = 2 * Math.asin((CARD_W + SEAM) / (2 * R));
+        const STEP_ARC = STEP_ANGLE * R;
 
         /* ==================== MOTION (ONE PASS, BOTTOM -> TOP) ==================== */
-        // The camera sits R + 7.8 away, so the ring's front — where the band is
-        // read — is framed exactly as before; only the curvature behind it is
-        // gentler.
-        const CAM_Z = R + 7.8;
-        const CAM_Z_CLOSE = R + 4.2;
+        const CAM_Z = 12;
         const FOV_DEG = 45;
 
         // Visible world height at the helix plane (z = 0).
         const VIEW_H = 2 * CAM_Z * Math.tan((FOV_DEG * Math.PI) / 180 / 2);
         // Angular span of the whole card row.
         const BAND_ANGLE = (C - 1) * STEP_ANGLE;
+        // Kept clear past each edge so the band is fully out of frame at both
+        // ends of the scroll.
+        const CLEARANCE = 1.2;
 
-        // Angle of the ring's front point — the part of the band facing camera.
-        const FRONT = Math.PI / 2;
+        // `base` is the angle of the trailing card. At progress 0 the whole band
+        // sits below the bottom edge; advancing it by PASS_ANGLE lifts it clear
+        // of the top edge, so the ribbon crosses the viewport exactly once —
+        // bottom to top — across the whole pinned scroll.
+        const START_ANGLE = -((VIEW_H / 2 + CLEARANCE + Y_START) / pitchPerRad) - BAND_ANGLE;
+        const PASS_ANGLE = (VIEW_H + CLEARANCE * 2) / pitchPerRad + BAND_ANGLE;
 
-        // The crossing is a rise of the whole band, not a climb along a steep
-        // helix: that is what keeps the cards level with each other ("next to
-        // each other", not stepped up and down). Sized so the row starts just
-        // below the bottom edge and finishes just past the top one.
-        const RISE = VIEW_H * 0.61;
-        // How far the material flows along the band over the whole scroll.
-        const FLOW_ANGLE = 0.6;
-
-        // Wave centre: the dip lives at the front, so it lifts the centre of the
-        // row while the row is on screen.
-        const MID = FRONT;
+        // Wave centre: the middle of the band's travel, so the dip is deepest
+        // while the ribbon is on screen.
+        const MID = START_ANGLE + (PASS_ANGLE + BAND_ANGLE) / 2;
 
         /* ==================== HELIX MATH ==================== */
         const dip = (a: number): number => {
@@ -199,11 +195,7 @@ export default function TrionnRibbon() {
           return DIP_A * Math.exp(-d * d);
         };
 
-        // Vertical offset of the whole band for the current scroll progress:
-        // this is what carries the row across the frame.
-        let bandRise = 0;
-
-        const helixY = (a: number): number => bandRise + a * pitchPerRad - dip(a);
+        const helixY = (a: number): number => Y_START + a * pitchPerRad - dip(a);
 
         const helixDY = (a: number): number => {
           const d = (a - MID) / DIP_S;
@@ -221,22 +213,18 @@ export default function TrionnRibbon() {
         const fragSrc = /* glsl */ `
           precision highp float;
           uniform sampler2D map;
+          uniform vec2 uSize;
+          uniform float uRadius;
           uniform float uBackMode;
-          uniform float uEdgeX;
           varying vec2 vUv;
           void main(){
-            if (!gl_FrontFacing && uBackMode > 0.5) discard;
-            vec2 w = fwidth(vUv);
-            // The cards tile edge to edge, so their side edges stay hard: an
-            // antialiased edge there would read as a seam between two panels.
-            // Only the ribbon's long edges — and the two ends of the row, which
-            // have no neighbour to hide the edge — are softened.
-            float edgeX = uEdgeX > 0.5
-              ? 1.0 - smoothstep(-w.x, w.x, abs(vUv.x - 0.5) - 0.5)
-              : 1.0;
-            float edgeY = 1.0 - smoothstep(-w.y, w.y, abs(vUv.y - 0.5) - 0.5);
-            float alpha = edgeX * edgeY;
+            vec2 pxPos = (vUv - 0.5) * uSize;
+            vec2 halfSize = uSize * 0.5;
+            vec2 q = abs(pxPos) - halfSize + uRadius;
+            float dist = min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - uRadius;
+            float alpha = 1.0 - smoothstep(-0.5, 0.5, dist);
             if (alpha <= 0.0) discard;
+            if (!gl_FrontFacing && uBackMode > 0.5) discard;
             vec3 col = texture2D(map, vUv).rgb;
             gl_FragColor = vec4(col, alpha);
           }
@@ -469,53 +457,15 @@ export default function TrionnRibbon() {
         /* ==================== BUILD CARDS ==================== */
         interface CardUserData { hoverScale: number }
         const cards: Mesh[] = [];
-
-        // One shared, coil-shaped card. A flat plane would cut a chord across the
-        // ring and meet its neighbours at a ~26° crease, so each card is built by
-        // sampling the helix itself: the offsets are expressed in the frame at
-        // the card's own centre, which means every shared edge lands on exactly
-        // the same point as the neighbour's edge. Result: one continuous ribbon,
-        // and the row still curves like paper instead of creasing like tiles.
-        const planeGeo: PlaneGeometry = (() => {
-          const geo = new THREE.PlaneGeometry(CARD_W, CARD_H, 32, 1);
-          const L = Math.sqrt(R * R + pitchPerRad * pitchPerRad);
-          const centre = new THREE.Vector3(R, 0, 0);
-          const bX = new THREE.Vector3(0, -pitchPerRad, -R).normalize();
-          const bY = new THREE.Vector3(0, R, -pitchPerRad).normalize();
-          const bZ = new THREE.Vector3(1, 0, 0);
-          const toLocal = new THREE.Matrix4().makeBasis(bX, bY, bZ).invert();
-          const p = new THREE.Vector3();
-          const pos = geo.attributes.position as THREE.BufferAttribute;
-          for (let i = 0; i < pos.count; i++) {
-            // t walks the coil. Note the leading minus: the local frame's X axis
-            // (bX) runs opposite to increasing angle, so sampling +x here would
-            // build every card mirrored — the artwork would read backwards and the
-            // triangle winding would invert, making the outward face register as a
-            // back face. Negating keeps X along the row and the faces front-facing.
-            const t = -pos.getX(i) / R; // arc offset from the card centre
-            const w = pos.getY(i); // offset across the band
-            p.set(
-              R * Math.cos(t) + (w * pitchPerRad * Math.sin(t)) / L,
-              (w * R) / L,
-              R * Math.sin(t) - (w * pitchPerRad * Math.cos(t)) / L
-            )
-              .sub(centre)
-              .applyMatrix4(toLocal);
-            pos.setXYZ(i, p.x, p.y, p.z);
-          }
-          pos.needsUpdate = true;
-          return geo;
-        })();
+        const planeGeo: PlaneGeometry = new THREE.PlaneGeometry(CARD_W, CARD_H, 1, 1);
 
         for (let k = 0; k < N; k++) {
           const mat: ShaderMaterial = new THREE.ShaderMaterial({
             uniforms: {
-              // The row wraps past the 12 artworks, so the last cards reuse them.
-              map: { value: projectTextures[k % projectTextures.length] },
+              map: { value: projectTextures[k] },
+              uSize: { value: new THREE.Vector2(CARD_W, CARD_H) },
+              uRadius: { value: CORNER_R },
               uBackMode: { value: BACK_MODE === 'transparent' ? 1.0 : 0.0 },
-              // Only the ends of the row have an exposed side edge; a couple of
-              // spare cards are flagged too, since culling can move the end.
-              uEdgeX: { value: k < 2 || k >= N - 2 ? 1.0 : 0.0 },
             },
             vertexShader: vertSrc,
             fragmentShader: fragSrc,
@@ -535,7 +485,7 @@ export default function TrionnRibbon() {
         const loadedTextures: THREE.Texture[] = [];
         const imageLoader = new THREE.TextureLoader();
         imageLoader.setCrossOrigin('anonymous');
-        helixImages.slice(0, projectTextures.length).forEach((src, j) => {
+        helixImages.slice(0, cards.length).forEach((src, k) => {
           const url = (src ?? '').trim();
           if (!url) return;
           imageLoader.load(
@@ -544,13 +494,9 @@ export default function TrionnRibbon() {
               if (cancelled) { texture.dispose(); return; }
               texture.colorSpace = THREE.SRGBColorSpace;
               texture.anisotropy = 8;
-              // Every card showing this artwork slot picks up the real image.
-              cards.forEach((card, k) => {
-                if (k % projectTextures.length !== j) return;
-                const mat = card.material as ShaderMaterial;
-                mat.uniforms.map.value = texture;
-                mat.needsUpdate = true;
-              });
+              const mat = cards[k].material as ShaderMaterial;
+              mat.uniforms.map.value = texture;
+              mat.needsUpdate = true;
               loadedTextures.push(texture);
             },
             undefined,
@@ -578,14 +524,6 @@ export default function TrionnRibbon() {
 
             _M.makeBasis(_X, _Y, _Z);
             const card = cards[col];
-            // Draw only cards whose face actually points at the camera. A card's
-            // normal is radial, so dot(normal, toCamera) > 0 reduces to
-            // sin(a) > R / camZ — and since the camera dollies, the cut moves with
-            // it. This is what stops a wide window from reaching round to the
-            // ring's back and drawing mirrored back faces, and it keeps the band's
-            // ends out of frame at both ends of the sweep. A card crossing the cut
-            // is exactly edge-on, so nothing pops.
-            card.visible = Math.sin(a) > R / camZ;
             card.quaternion.setFromRotationMatrix(_M);
             card.position.set(R * ca, helixY(a), R * sa);
             card.scale.setScalar((card.userData as CardUserData).hoverScale ?? 1);
@@ -612,30 +550,10 @@ export default function TrionnRibbon() {
         host.addEventListener('pointerleave', onPointerLeave);
 
         /* ==================== CAMERA DOLLY (pushes in for the twist) ==================== */
-        // The dolly is deepest mid-sweep, where the band is on screen and the
-        // row is read close up.
+        // The ribbon's twist happens mid-sweep, so the camera moves in close
+        // there and eases back out at both ends of the scroll.
+        const CAM_Z_CLOSE = 7.8;
         let camZ = CAM_Z;
-
-        /* ==================== HEADLINE PARALLAX ==================== */
-        // Declared before the ScrollTrigger below on purpose. A page that loads
-        // already scrolled into this pinned section fires onUpdate during
-        // create(), which reaches updateHeadline() straight away — if the words
-        // were still uninitialised that throws and the whole effect never boots.
-        const wordA = rootRef.current.querySelector('.word-a') as HTMLElement | null;
-        const wordB = rootRef.current.querySelector('.word-b') as HTMLElement | null;
-
-        function updateHeadline(): void {
-          const p = scrollProgress;
-          const driftMax = Math.min(window.innerWidth * 0.4, 560);
-          // Both words start centered so nothing is clipped at rest, then they
-          // drift apart as the section scrolls.
-          const xA = p * driftMax;
-          const xB = -p * driftMax;
-          const yA = -p * window.innerHeight * 0.08;
-          const yB = p * window.innerHeight * 0.06;
-          if (wordA) wordA.style.transform = `translate3d(${xA}px, ${yA}px, 0)`;
-          if (wordB) wordB.style.transform = `translate3d(${xB}px, ${yB}px, 0)`;
-        }
 
         /* ==================== SCROLL TRIGGER ==================== */
         const section = rootRef.current;
@@ -655,6 +573,23 @@ export default function TrionnRibbon() {
           },
         });
 
+        /* ==================== HEADLINE PARALLAX ==================== */
+        const wordA = rootRef.current.querySelector('.word-a') as HTMLElement | null;
+        const wordB = rootRef.current.querySelector('.word-b') as HTMLElement | null;
+
+        function updateHeadline(): void {
+          const p = scrollProgress;
+          const driftMax = Math.min(window.innerWidth * 0.4, 560);
+          // Both words start centered so nothing is clipped at rest, then they
+          // drift apart as the section scrolls.
+          const xA = p * driftMax;
+          const xB = -p * driftMax;
+          const yA = -p * window.innerHeight * 0.08;
+          const yB = p * window.innerHeight * 0.06;
+          if (wordA) wordA.style.transform = `translate3d(${xA}px, ${yA}px, 0)`;
+          if (wordB) wordB.style.transform = `translate3d(${xB}px, ${yB}px, 0)`;
+        }
+
         /* ==================== renderTick ==================== */
         function renderTick(): void {
           // Push in toward the ribbon for the twist at the middle of the sweep.
@@ -664,12 +599,9 @@ export default function TrionnRibbon() {
           cam.position.z = camZ;
 
           // One sweep, bottom to top: the band starts below the bottom edge and
-          // has cleared the top edge by the end of the scroll, while its cards
-          // flow along the ring. Purely a function of scroll progress, so it
-          // holds still whenever the page does.
-          bandRise = (scrollProgress - 0.5) * RISE;
-          const base =
-            FRONT - BAND_ANGLE / 2 - FLOW_ANGLE / 2 + scrollProgress * FLOW_ANGLE;
+          // has cleared the top edge by the end of the scroll. Position comes
+          // purely from the scroll — the ribbon holds still when you do.
+          const base = START_ANGLE + scrollProgress * PASS_ANGLE;
 
           wrapCardOnHelix(base * R);
 
