@@ -135,28 +135,63 @@ export default function TrionnRibbon() {
 
         /* ==================== CONSTANTS ==================== */
         const BACK_MODE: string = 'mirror';
-        const N = 12;
-        const C = 12;
-        const R = 4.2;
+        const N = 14;
+        const C = 14;
+        const R = 12;
 
-        // Keep Y_START moderate (-2) so the curve fits well vertically
-        const Y_START = -2;
-
-        const pitchPerRad = 0.55;
-        const MID = Math.PI * 3;
+        // A *wide* ring, not a small tight coil. The visible slice of a ring is
+        // viewWidth / R of arc, so a big radius is what keeps neighbouring cards
+        // side by side and nearly parallel instead of fanning out into a
+        // scattered collage. It also has to be wide enough that cards still face
+        // the camera at the edges of a wide window: a card at angle a is only
+        // front-facing while sin(a) > R / camZ, so R² / camZ is the half-width of
+        // usable band. With R = 12 the row fills even a 3:1 frame with front
+        // faces. Camera distance and step angle scale with it, which keeps the
+        // framed card size identical.
+        const pitchPerRad = 0.35;
         const DIP_S = 2.0;
-        const DIP_A = 1.6;
+        const DIP_A = 0.5;
         const hoverLerpK = 0.12;
 
-        // Scroll distance for one pass through
+        // Scroll distance for the single pass
         const totalScroll = 3500;
 
         const CARD_W = 1.9;
         const CARD_H = (CARD_W * 712) / 1024;
-        const CORNER_R = 0.08;
-        const SEAM = 0.04;
-        const STEP_ANGLE = 2 * Math.asin((CARD_W + SEAM) / (2 * R));
-        const STEP_ARC = STEP_ANGLE * R;
+        // Cards tile the ring edge to edge: the angular step is exactly the
+        // card's own arc, so a card's side edges land on the same points as its
+        // neighbours' and the surfaces stay tangent where they meet. The row then
+        // reads as one continuous ribbon rather than a chain of separate tiles.
+        const STEP_ANGLE = CARD_W / R;
+        const STEP_ARC = CARD_W;
+
+        /* ==================== MOTION (ONE PASS, BOTTOM -> TOP) ==================== */
+        // The camera sits R + 7.8 away, so the ring's front — where the band is
+        // read — is framed exactly as before; only the curvature behind it is
+        // gentler.
+        const CAM_Z = R + 7.8;
+        const CAM_Z_CLOSE = R + 4.2;
+        const FOV_DEG = 45;
+
+        // Visible world height at the helix plane (z = 0).
+        const VIEW_H = 2 * CAM_Z * Math.tan((FOV_DEG * Math.PI) / 180 / 2);
+        // Angular span of the whole card row.
+        const BAND_ANGLE = (C - 1) * STEP_ANGLE;
+
+        // Angle of the ring's front point — the part of the band facing camera.
+        const FRONT = Math.PI / 2;
+
+        // The crossing is a rise of the whole band, not a climb along a steep
+        // helix: that is what keeps the cards level with each other ("next to
+        // each other", not stepped up and down). Sized so the row starts just
+        // below the bottom edge and finishes just past the top one.
+        const RISE = VIEW_H * 0.61;
+        // How far the material flows along the band over the whole scroll.
+        const FLOW_ANGLE = 0.6;
+
+        // Wave centre: the dip lives at the front, so it lifts the centre of the
+        // row while the row is on screen.
+        const MID = FRONT;
 
         /* ==================== HELIX MATH ==================== */
         const dip = (a: number): number => {
@@ -164,7 +199,11 @@ export default function TrionnRibbon() {
           return DIP_A * Math.exp(-d * d);
         };
 
-        const helixY = (a: number): number => Y_START + a * pitchPerRad - dip(a);
+        // Vertical offset of the whole band for the current scroll progress:
+        // this is what carries the row across the frame.
+        let bandRise = 0;
+
+        const helixY = (a: number): number => bandRise + a * pitchPerRad - dip(a);
 
         const helixDY = (a: number): number => {
           const d = (a - MID) / DIP_S;
@@ -182,18 +221,22 @@ export default function TrionnRibbon() {
         const fragSrc = /* glsl */ `
           precision highp float;
           uniform sampler2D map;
-          uniform vec2 uSize;
-          uniform float uRadius;
           uniform float uBackMode;
+          uniform float uEdgeX;
           varying vec2 vUv;
           void main(){
-            vec2 pxPos = (vUv - 0.5) * uSize;
-            vec2 halfSize = uSize * 0.5;
-            vec2 q = abs(pxPos) - halfSize + uRadius;
-            float dist = min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - uRadius;
-            float alpha = 1.0 - smoothstep(-0.5, 0.5, dist);
-            if (alpha <= 0.0) discard;
             if (!gl_FrontFacing && uBackMode > 0.5) discard;
+            vec2 w = fwidth(vUv);
+            // The cards tile edge to edge, so their side edges stay hard: an
+            // antialiased edge there would read as a seam between two panels.
+            // Only the ribbon's long edges — and the two ends of the row, which
+            // have no neighbour to hide the edge — are softened.
+            float edgeX = uEdgeX > 0.5
+              ? 1.0 - smoothstep(-w.x, w.x, abs(vUv.x - 0.5) - 0.5)
+              : 1.0;
+            float edgeY = 1.0 - smoothstep(-w.y, w.y, abs(vUv.y - 0.5) - 0.5);
+            float alpha = edgeX * edgeY;
+            if (alpha <= 0.0) discard;
             vec3 col = texture2D(map, vUv).rgb;
             gl_FragColor = vec4(col, alpha);
           }
@@ -426,15 +469,53 @@ export default function TrionnRibbon() {
         /* ==================== BUILD CARDS ==================== */
         interface CardUserData { hoverScale: number }
         const cards: Mesh[] = [];
-        const planeGeo: PlaneGeometry = new THREE.PlaneGeometry(CARD_W, CARD_H, 1, 1);
+
+        // One shared, coil-shaped card. A flat plane would cut a chord across the
+        // ring and meet its neighbours at a ~26° crease, so each card is built by
+        // sampling the helix itself: the offsets are expressed in the frame at
+        // the card's own centre, which means every shared edge lands on exactly
+        // the same point as the neighbour's edge. Result: one continuous ribbon,
+        // and the row still curves like paper instead of creasing like tiles.
+        const planeGeo: PlaneGeometry = (() => {
+          const geo = new THREE.PlaneGeometry(CARD_W, CARD_H, 32, 1);
+          const L = Math.sqrt(R * R + pitchPerRad * pitchPerRad);
+          const centre = new THREE.Vector3(R, 0, 0);
+          const bX = new THREE.Vector3(0, -pitchPerRad, -R).normalize();
+          const bY = new THREE.Vector3(0, R, -pitchPerRad).normalize();
+          const bZ = new THREE.Vector3(1, 0, 0);
+          const toLocal = new THREE.Matrix4().makeBasis(bX, bY, bZ).invert();
+          const p = new THREE.Vector3();
+          const pos = geo.attributes.position as THREE.BufferAttribute;
+          for (let i = 0; i < pos.count; i++) {
+            // t walks the coil. Note the leading minus: the local frame's X axis
+            // (bX) runs opposite to increasing angle, so sampling +x here would
+            // build every card mirrored — the artwork would read backwards and the
+            // triangle winding would invert, making the outward face register as a
+            // back face. Negating keeps X along the row and the faces front-facing.
+            const t = -pos.getX(i) / R; // arc offset from the card centre
+            const w = pos.getY(i); // offset across the band
+            p.set(
+              R * Math.cos(t) + (w * pitchPerRad * Math.sin(t)) / L,
+              (w * R) / L,
+              R * Math.sin(t) - (w * pitchPerRad * Math.cos(t)) / L
+            )
+              .sub(centre)
+              .applyMatrix4(toLocal);
+            pos.setXYZ(i, p.x, p.y, p.z);
+          }
+          pos.needsUpdate = true;
+          return geo;
+        })();
 
         for (let k = 0; k < N; k++) {
           const mat: ShaderMaterial = new THREE.ShaderMaterial({
             uniforms: {
-              map: { value: projectTextures[k] },
-              uSize: { value: new THREE.Vector2(CARD_W, CARD_H) },
-              uRadius: { value: CORNER_R },
+              // The row wraps past the 12 artworks, so the last cards reuse them.
+              map: { value: projectTextures[k % projectTextures.length] },
               uBackMode: { value: BACK_MODE === 'transparent' ? 1.0 : 0.0 },
+              // Only the ends of the row have an exposed side edge; a couple of
+              // spare cards are flagged too, since culling can move the end.
+              uEdgeX: { value: k < 2 || k >= N - 2 ? 1.0 : 0.0 },
             },
             vertexShader: vertSrc,
             fragmentShader: fragSrc,
@@ -454,7 +535,7 @@ export default function TrionnRibbon() {
         const loadedTextures: THREE.Texture[] = [];
         const imageLoader = new THREE.TextureLoader();
         imageLoader.setCrossOrigin('anonymous');
-        helixImages.slice(0, cards.length).forEach((src, k) => {
+        helixImages.slice(0, projectTextures.length).forEach((src, j) => {
           const url = (src ?? '').trim();
           if (!url) return;
           imageLoader.load(
@@ -463,9 +544,13 @@ export default function TrionnRibbon() {
               if (cancelled) { texture.dispose(); return; }
               texture.colorSpace = THREE.SRGBColorSpace;
               texture.anisotropy = 8;
-              const mat = cards[k].material as ShaderMaterial;
-              mat.uniforms.map.value = texture;
-              mat.needsUpdate = true;
+              // Every card showing this artwork slot picks up the real image.
+              cards.forEach((card, k) => {
+                if (k % projectTextures.length !== j) return;
+                const mat = card.material as ShaderMaterial;
+                mat.uniforms.map.value = texture;
+                mat.needsUpdate = true;
+              });
               loadedTextures.push(texture);
             },
             undefined,
@@ -493,6 +578,14 @@ export default function TrionnRibbon() {
 
             _M.makeBasis(_X, _Y, _Z);
             const card = cards[col];
+            // Draw only cards whose face actually points at the camera. A card's
+            // normal is radial, so dot(normal, toCamera) > 0 reduces to
+            // sin(a) > R / camZ — and since the camera dollies, the cut moves with
+            // it. This is what stops a wide window from reaching round to the
+            // ring's back and drawing mirrored back faces, and it keeps the band's
+            // ends out of frame at both ends of the sweep. A card crossing the cut
+            // is exactly edge-on, so nothing pops.
+            card.visible = Math.sin(a) > R / camZ;
             card.quaternion.setFromRotationMatrix(_M);
             card.position.set(R * ca, helixY(a), R * sa);
             card.scale.setScalar((card.userData as CardUserData).hoverScale ?? 1);
@@ -518,61 +611,16 @@ export default function TrionnRibbon() {
         host.addEventListener('pointermove', onPointerMove);
         host.addEventListener('pointerleave', onPointerLeave);
 
-        /* ==================== IDLE SPIN ==================== */
-        let idleAngle = 0;
-        const idleSpeed = 0.18;
-        let idleActive = false;
-        let lastIdleT = 0;
-
-        function startTicker(): void {
-          if (idleActive) return;
-          idleActive = true;
-          lastIdleT = performance.now();
-        }
-        function stopTicker(): void { idleActive = false; }
-        function idleTick(now: number): void {
-          const dt = Math.min(0.05, (now - lastIdleT) / 1000);
-          lastIdleT = now;
-          idleAngle += idleSpeed * dt;
-        }
-
-        /* ==================== CAMERA ZOOM (active while scrolling) ==================== */
-        const CAM_Z = 12;
-        const CAM_Z_ZOOMED = 10.1; // "a bit zoomed" toward the screen
+        /* ==================== CAMERA DOLLY (pushes in for the twist) ==================== */
+        // The dolly is deepest mid-sweep, where the band is on screen and the
+        // row is read close up.
         let camZ = CAM_Z;
-        let lastScrollTime = -Infinity;
-
-        /* ==================== SCROLL TRIGGER ==================== */
-        const section = rootRef.current;
-        let scrollProgress = 0;
-
-        ScrollTrigger.refresh();
-
-        const st = ScrollTrigger.create({
-          trigger: section,
-          start: 'top top',
-          end: `+=${totalScroll}`,
-          pin: true,
-          anticipatePin: 1,
-          onUpdate: (self: ScrollTriggerInstance) => {
-            scrollProgress = self.progress;
-            lastScrollTime = performance.now();
-            renderTick();
-            syncTicker();
-          },
-        });
-
-        const isActive = (): boolean => {
-          const margin = window.innerHeight;
-          const viewTop = window.scrollY - margin;
-          const viewBottom = window.scrollY + window.innerHeight + margin;
-          return viewBottom > st.start && viewTop < st.start + totalScroll;
-        };
-        const syncTicker = (): void => {
-          isActive() ? startTicker() : stopTicker();
-        };
 
         /* ==================== HEADLINE PARALLAX ==================== */
+        // Declared before the ScrollTrigger below on purpose. A page that loads
+        // already scrolled into this pinned section fires onUpdate during
+        // create(), which reaches updateHeadline() straight away — if the words
+        // were still uninitialised that throws and the whole effect never boots.
         const wordA = rootRef.current.querySelector('.word-a') as HTMLElement | null;
         const wordB = rootRef.current.querySelector('.word-b') as HTMLElement | null;
 
@@ -589,24 +637,39 @@ export default function TrionnRibbon() {
           if (wordB) wordB.style.transform = `translate3d(${xB}px, ${yB}px, 0)`;
         }
 
-        /* ==================== renderTick (TOP-DOWN VANISHING LOGIC) ==================== */
+        /* ==================== SCROLL TRIGGER ==================== */
+        const section = rootRef.current;
+        let scrollProgress = 0;
+
+        ScrollTrigger.refresh();
+
+        const st = ScrollTrigger.create({
+          trigger: section,
+          start: 'top top',
+          end: `+=${totalScroll}`,
+          pin: true,
+          anticipatePin: 1,
+          onUpdate: (self: ScrollTriggerInstance) => {
+            scrollProgress = self.progress;
+            renderTick();
+          },
+        });
+
+        /* ==================== renderTick ==================== */
         function renderTick(): void {
-          // Zoom the camera slightly toward the helix while actively scrolling,
-          // ease back to the resting distance once scrolling stops.
-          const scrolling = performance.now() - lastScrollTime < 250;
-          const targetZ = scrolling ? CAM_Z_ZOOMED : CAM_Z;
-          camZ += (targetZ - camZ) * 0.07;
+          // Push in toward the ribbon for the twist at the middle of the sweep.
+          const twist = Math.sin(Math.PI * scrollProgress); // 0 -> 1 -> 0
+          const targetZ = CAM_Z - (CAM_Z - CAM_Z_CLOSE) * twist;
+          camZ += (targetZ - camZ) * 0.09;
           cam.position.z = camZ;
 
-          // Total rotation range. Increased to ensure full exit.
-          const totalAngle = Math.PI * 12;
-
-          // 🎯 FIX: High start offset pushes the ribbon WAY UP initially.
-          // At progress=0, base is huge positive -> helixY is huge positive -> Off-screen Top.
-          // As progress increases, base decreases -> ribbon slides down into view.
-          const startOffset = Math.PI * 5.5;
-
-          const base = startOffset - (scrollProgress * totalAngle) + idleAngle;
+          // One sweep, bottom to top: the band starts below the bottom edge and
+          // has cleared the top edge by the end of the scroll, while its cards
+          // flow along the ring. Purely a function of scroll progress, so it
+          // holds still whenever the page does.
+          bandRise = (scrollProgress - 0.5) * RISE;
+          const base =
+            FRONT - BAND_ANGLE / 2 - FLOW_ANGLE / 2 + scrollProgress * FLOW_ANGLE;
 
           wrapCardOnHelix(base * R);
 
@@ -639,8 +702,7 @@ export default function TrionnRibbon() {
         };
 
         /* ==================== MAIN RENDER LOOP ==================== */
-        const tickerCb = (now: number): void => {
-          if (idleActive) idleTick(now);
+        const tickerCb = (): void => {
           renderTick();
           renderer.render(scene, cam);
         };
@@ -650,12 +712,24 @@ export default function TrionnRibbon() {
         function size(): void {
           const w = host.clientWidth;
           const h = host.clientHeight;
+          if (!w || !h) return;
           renderer.setSize(w, h);
           cam.aspect = w / h;
           cam.updateProjectionMatrix();
           updateHeadline();
         }
         size();
+
+        // The first paint can still be mid-layout (the host briefly measures as a
+        // thin strip), so keep the drawing buffer tied to the host rather than
+        // trusting a single measurement.
+        let sizeRaf = 0;
+        const queueSize = (): void => {
+          cancelAnimationFrame(sizeRaf);
+          sizeRaf = requestAnimationFrame(() => size());
+        };
+        const ro = new ResizeObserver(queueSize);
+        ro.observe(host);
 
         const onResize = (): void => {
           size();
@@ -667,12 +741,13 @@ export default function TrionnRibbon() {
         warmUp();
         setTimeout(() => warmUp(), 120);
         renderTick();
-        startTicker();
         setTimeout(() => ScrollTrigger.refresh(), 100);
 
         cleanupFn = () => {
           cancelled = true;
           window.removeEventListener('resize', onResize);
+          ro.disconnect();
+          cancelAnimationFrame(sizeRaf);
           host.removeEventListener('pointermove', onPointerMove);
           host.removeEventListener('pointerleave', onPointerLeave);
           gsap.ticker.remove(tickerCb);
