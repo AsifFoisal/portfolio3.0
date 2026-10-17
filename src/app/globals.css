@@ -242,7 +242,7 @@ p {
   color: #1b1b1b;
 }
 
-.hero-description .call-button {
+.call-button {
   position: relative;
   overflow: hidden;
   display: inline-flex;

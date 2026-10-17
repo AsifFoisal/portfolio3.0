@@ -196,15 +196,23 @@ export default function SiteFooter() {
                   </a>
                 </div>
 
-                <div className="pt-2">
-                  <button
-                    onClick={copyEmail}
-                    className="group flex items-center space-x-1.5 text-sm font-medium text-gray-700 transition hover:text-gray-900 focus:outline-none"
+                <div className="group flex items-center space-x-1.5 pt-2">
+                  <a
+                    href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(footer.email)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-gray-700 transition hover:text-gray-900"
                   >
-                    <span>{footer.email}</span>
-                    <span className="text-xs text-gray-400 opacity-0 transition-opacity group-hover:opacity-100">
-                      <IconCopy />
-                    </span>
+                    {footer.email}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={copyEmail}
+                    aria-label="Copy email address"
+                    title="Copy email address"
+                    className="text-xs text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-gray-700 focus-visible:opacity-100 max-sm:opacity-60"
+                  >
+                    <IconCopy />
                   </button>
                 </div>
               </div>
