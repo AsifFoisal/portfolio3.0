@@ -164,21 +164,26 @@ function AboutParagraph({ targetRef }: { targetRef: RefObject<HTMLElement | null
   );
 }
 
-/** Counts up from zero the first time it scrolls into view. */
+/** Counts up from zero the first time it scrolls into view.
+ *  Whole numbers render two digits ("03"), matching admin entries like "03". */
 function CountUp({ value, decimals = 0 }: { value: number; decimals?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.6 });
-  const [display, setDisplay] = useState(() => (0).toFixed(decimals));
+  const format = useCallback(
+    (n: number) => (decimals > 0 ? n.toFixed(decimals) : String(Math.round(n)).padStart(2, '0')),
+    [decimals]
+  );
+  const [display, setDisplay] = useState(() => format(0));
 
   useEffect(() => {
     if (!inView) return;
     const controls = animate(0, value, {
       duration: 1.8,
       ease: 'easeOut',
-      onUpdate: (latest) => setDisplay(latest.toFixed(decimals)),
+      onUpdate: (latest) => setDisplay(format(latest)),
     });
     return () => controls.stop();
-  }, [inView, value, decimals]);
+  }, [inView, value, decimals, format]);
 
   return <span ref={ref}>{display}</span>;
 }
@@ -342,7 +347,12 @@ function Stories() {
   const { scrollYProgress } = useScroll({ target: trackRef, offset: ['start start', 'end end'] });
   const { scrollYProgress: titleProgress } = useScroll({ target: trackRef, offset: ['start 0.75', 'start 0.4'] });
 
+  // End width over-sizes by the 60px translate shift, so the full-bleed end
+  // state still covers the viewport edge to edge after the leftward move.
   const boxWidth = useTransform(scrollYProgress, [0, 1], ['22%', '100%']);
+  // The leftward offset only applies to the small feed; it eases back to 0 as
+  // the box expands so the big feed stays full screen and centered.
+  const boxShiftX = useTransform(scrollYProgress, [0, 1], [-30, 0]);
   const boxHeight = useTransform(scrollYProgress, [0, 1], ['14vh', '100vh']);
   const boxRadius = useTransform(scrollYProgress, [0, 1], [20, 0]);
   const videoScale = useTransform(scrollYProgress, [0, 1], [1.5, 1]);
@@ -354,23 +364,23 @@ function Stories() {
   return (
     <section className="relative bg-white" id="stories" aria-label="Visual stories">
       <div className="stories-track relative lg:h-[280vh]" ref={trackRef}>
-        <div className="stories-stage relative z-[5] flex flex-col items-center gap-6 pb-[100px] lg:sticky lg:top-0 lg:h-screen lg:justify-center lg:overflow-hidden lg:pb-0">
+          <div className="stories-stage relative z-[5] flex flex-col items-center gap-6 pb-[100px] lg:sticky lg:top-0 lg:h-screen lg:justify-center lg:overflow-hidden lg:pb-0">
           <div className="overflow-hidden lg:hidden">
             <h2 className={`${titleCls} text-[clamp(64px,17vw,130px)]`}>{stories.mobileTitleTop}</h2>
           </div>
 
-          <motion.div className="stories-box relative aspect-video w-[calc(100%-40px)] rounded-[20px] lg:aspect-auto lg:h-[14vh] lg:w-[22%]" style={{ width: boxWidth, height: boxHeight, borderRadius: boxRadius }}>
+          <motion.div className="stories-box relative aspect-video w-[calc(100%-40px)] rounded-[20px] lg:aspect-auto lg:h-[14vh] lg:w-[22%]" style={{ width: boxWidth, height: boxHeight, borderRadius: boxRadius, x: boxShiftX }}>
             <div className="absolute inset-0 overflow-hidden rounded-[inherit] bg-neutral-200">
               <motion.video className="stories-video absolute inset-0 size-full object-cover" style={{ scale: videoScale }} src={stories.videoUrl} poster={stories.poster} autoPlay muted loop playsInline preload="metadata" />
               <div className="absolute inset-0 bg-black/25" />
             </div>
 
-            <div className="absolute inset-y-0 right-[calc(100%+40px)] hidden items-center lg:flex">
+            <div className="absolute inset-y-0 right-[calc(100%+33.5px)] hidden items-center lg:flex">
               <div className="overflow-hidden">
                 <motion.h2 className={`stories-side-title ${titleCls} text-[clamp(64px,7.2vw,110px)]`} style={{ y: visualY }}>{stories.mobileTitleTop}</motion.h2>
               </div>
             </div>
-            <div className="absolute inset-y-0 left-[calc(100%+10px)] hidden items-center lg:flex">
+            <div className="absolute inset-y-0 story left-[calc(100%+33.5px)] hidden items-center lg:flex">
               <div className="overflow-hidden">
                 <motion.h2 className={`stories-side-title ${titleCls} text-[clamp(64px,7.2vw,110px)]`} style={{ y: storiesY }}>{stories.mobileTitleBottom}</motion.h2>
               </div>
@@ -440,13 +450,12 @@ function Testimonials() {
   return (
     <section ref={rootRef} className="testimonials page-width" id="clients" aria-labelledby="clients-title">
       <h2 className="large-heading low-contrast-heading" id="clients-title"><SectionHeading heading={content.testimonials.heading} /></h2>
-      <div className="mx-auto flex max-w-[1080px] flex-col items-center text-center" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-        <p className="eyebrow">{content.testimonials.eyebrow}</p>
-
+      <div className="mx-auto flex max-w-[1004px] flex-col items-center text-center" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
         <Image aria-hidden="true" src="/images/quote-mark.png" alt="" width={64} height={46} className="mt-10 mb-10 h-[32px] w-auto lg:h-[44px]" />
 
-        <div aria-live="polite" className="flex min-h-[210px] w-full items-start justify-center sm:min-h-[180px] lg:min-h-[170px]">
-          <motion.blockquote key={active} initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }} className="text-[clamp(24px,3.2vw,44px)] font-medium leading-[1.2] tracking-[-0.025em] text-balance">
+        <div aria-live="polite" className="flex w-full items-start justify-center">
+          <motion.blockquote key={active} initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }} className="text-[32px] font-medium leading-[1.2] tracking-[-0.025em] text-balance">
+            <span>“</span>
             {words.map((word, i) => (
               <span key={i}>
                 <span className="inline-block overflow-hidden pb-[0.12em] -mb-[0.12em] align-bottom">
@@ -457,14 +466,15 @@ function Testimonials() {
                 {i < words.length - 1 ? ' ' : null}
               </span>
             ))}
+            <span>”</span>
           </motion.blockquote>
         </div>
 
-        <motion.p key={`author-${active}`} initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 1, delay: 0.25, ease: [0.16, 1, 0.3, 1] }} className="mt-6 text-[#555555]">
+        <motion.p key={`author-${active}`} initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 1, delay: 0.25, ease: [0.16, 1, 0.3, 1] }} className="testimonial-author text-[#555555]">
           <span className="font-semibold text-[#1a1a1a]">{t.name}</span> — {t.role}{t.company ? `, ${t.company}` : ''}
         </motion.p>
 
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-2 md:gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
           {testimonials.map((person, i) => (
             <motion.div
               key={person.name}
@@ -476,9 +486,9 @@ function Testimonials() {
                 className={cn('flex items-center gap-3 rounded-full p-1.5 transition-all duration-500 md:pr-5', i === active ? 'bg-[#f1f1f1]' : 'opacity-50 hover:opacity-100')}>
                 <Image src={person.avatar} alt="" width={44} height={44} loading="lazy" style={{ objectPosition: person.position }}
                   className={cn('size-11 rounded-full object-cover ring-2 transition-all duration-500', i === active ? 'ring-[#ff4c4e]' : 'ring-transparent grayscale')} />
-                <span className="hidden text-left text-sm font-semibold leading-tight md:block">
+                <span className="hidden text-left text-[16px] font-medium leading-tight md:block">
                   {person.name}
-                  <span className="block text-xs font-medium text-[#555555]/70">{person.company || person.role}</span>
+                  <span className="block text-[14px] font-medium text-[#555555]/70">{person.company || person.role}</span>
                 </span>
               </button>
             </motion.div>

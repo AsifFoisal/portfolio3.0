@@ -534,78 +534,69 @@
     "heroLogoDim": "/logo-dim.png",
     "heroLogoFill": "/logo-fill.png",
     "heroLogoAlt": "Seam Rahman",
-    "liveLinkLabel": "Live Link",
-    "figmaLinkLabel": "Figma Link",
     "projects": [
       {
         "title": "MyWorker AI",
         "description": "AI platform simplifying hiring, management, and workforce scaling.",
         "image": "",
-        "liveUrl": "",
-        "figmaUrl": "",
         "align": "l",
         "width": 40.6,
-        "art": "work"
+        "art": "work",
+        "url": ""
       },
       {
         "title": "Pulse Studio",
         "description": "A motion-led studio website showcasing artists, projects, and culture.",
         "image": "",
-        "liveUrl": "",
-        "figmaUrl": "",
         "align": "r",
         "width": 35.4,
-        "art": "pulse"
+        "art": "pulse",
+        "url": ""
       },
       {
         "title": "Loftloom",
         "description": "Seamless real estate platform for effortless property discovery.",
         "image": "",
-        "liveUrl": "",
-        "figmaUrl": "",
         "align": "l",
         "width": 40.6,
-        "art": "loft"
+        "art": "loft",
+        "url": ""
       },
       {
         "title": "DFZ Watch",
         "description": "A clean platform to discover, customize, and buy luxury watches.",
         "image": "",
-        "liveUrl": "",
-        "figmaUrl": "",
         "align": "c",
         "width": 45.6,
-        "art": "dfz"
+        "art": "dfz",
+        "url": ""
       },
       {
         "title": "Domus Immobilien Kultur",
         "description": "Premium real estate and architectural showcase platform.",
         "image": "",
-        "liveUrl": "",
-        "figmaUrl": "",
         "align": "r",
         "width": 40.7,
-        "art": "domus"
+        "art": "domus",
+        "url": ""
       },
       {
         "title": "Revnet",
         "description": "Scalable hybrid cloud solutions for enterprises.",
         "image": "",
-        "liveUrl": "",
-        "figmaUrl": "",
         "align": "l",
         "width": 35.7,
-        "art": "rev"
+        "art": "rev",
+        "url": ""
       },
       {
         "title": "Fintech Dashboard",
         "description": "A smart card and spending dashboard for modern banking.",
         "image": "",
-        "liveUrl": "",
-        "figmaUrl": "",
         "align": "c",
         "width": 45.7,
-        "art": "fin"
+        "art": "fin",
+        "url": ""
       }
     ]
   },
@@ -634,6 +625,10 @@
     {
       "label": "My Services",
       "href": "#services"
+    },
+    {
+      "label": "Latest Design Works",
+      "href": "#latest-works"
     },
     {
       "label": "Experience",

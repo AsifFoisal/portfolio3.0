@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import './SiteNav.css';
 import Image from 'next/image';
 import Link from 'next/link';
-import { WhatsApp3DIcon } from './Icons';
 import { useSiteContent } from '../data/content-context';
 
 export default function SiteNav() {
@@ -79,7 +78,7 @@ export default function SiteNav() {
         <div id="menuDrawer" className={menuOpen ? 'menu-drawer open' : 'menu-drawer'}>
           {/* Top Row: Label & Close Button */}
           <div className="flex items-center justify-between mb-8">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Menu</span>
+            <span className="text-[14px] font-medium uppercase tracking-wider text-gray-400">Menu</span>
             <button
               id="closeMenuBtn"
               className="w-12 h-12 btn-black flex items-center justify-center shadow-md cursor-pointer"
@@ -101,7 +100,7 @@ export default function SiteNav() {
                   href={link.href}
                   scroll={false}
                   onClick={() => setMenuOpen(false)}
-                  className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase"
+                  className="block text-[20px] font-medium text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase"
                 >
                   {link.label}
                 </Link>
@@ -110,7 +109,7 @@ export default function SiteNav() {
                   key={`${link.label}-${link.href}`}
                   href={link.href}
                   onClick={() => setMenuOpen(false)}
-                  className="block text-xl font-extrabold text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase"
+                  className="block text-[20px] font-medium text-gray-900 hover:text-gray-500 tracking-tight transition-colors uppercase"
                 >
                   {link.label}
                 </a>
@@ -123,7 +122,8 @@ export default function SiteNav() {
             <a href={footer.whatsappUrl} target="_blank" rel="noreferrer" className="say-hello-btn">
               <span className="say-hello-btn__text">Contact With Me</span>
               <span className="say-hello-btn__badge">
-                <WhatsApp3DIcon className="say-hello-btn__icon" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/images/whatsapp-badge.png" alt="" className="say-hello-btn__icon menu-wa-logo" />
               </span>
             </a>
           </div>
@@ -133,24 +133,21 @@ export default function SiteNav() {
           {/* Two-Column Footer Links */}
           <div className="grid grid-cols-2 gap-6 text-sm">
             <div className="space-y-3">
-              <span className="block text-xs font-semibold uppercase tracking-wider text-gray-400">Menu</span>
-              <a href="#behance" className="block font-extrabold text-gray-900 hover:text-gray-500 transition-colors uppercase">BEHANCE</a>
-              <a href="#linkedin" className="block font-extrabold text-gray-900 hover:text-gray-500 transition-colors uppercase">LINKEDIN</a>
-              <a href="#instagram" className="block font-extrabold text-gray-900 hover:text-gray-500 transition-colors uppercase">INSTAGRAM</a>
+              <span className="block text-[14px] font-medium uppercase tracking-wider text-gray-400">Menu</span>
+              <a href="#behance" className="block text-[20px] font-medium text-gray-900 hover:text-gray-500 transition-colors uppercase">BEHANCE</a>
+              <a href="#linkedin" className="block text-[20px] font-medium text-gray-900 hover:text-gray-500 transition-colors uppercase">LINKEDIN</a>
+              <a href="#instagram" className="block text-[20px] font-medium text-gray-900 hover:text-gray-500 transition-colors uppercase">INSTAGRAM</a>
             </div>
             <div className="space-y-5">
               <div>
-                <span className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Drop us a line</span>
-                <a href={`mailto:${footer.email}`} className="font-bold text-gray-900 hover:text-gray-500 transition-colors break-all">{footer.email}</a>
+                <span className="block text-[14px] font-medium uppercase tracking-wider text-gray-400 mb-1">Drop us a line</span>
+                <a href={`mailto:${footer.email}`} className="text-[18px] font-medium text-gray-900 hover:text-gray-500 transition-colors break-all">{footer.email}</a>
               </div>
               <div>
-                <span className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Curriculum Vitae</span>
-                <a href="#" className="inline-flex items-center gap-2 font-bold text-gray-900 hover:text-gray-500 transition-colors">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                  </svg>
+                <span className="block text-[14px] font-medium uppercase tracking-wider text-gray-400 mb-1">Curriculum Vitae</span>
+                <a href="#" className="inline-flex items-center gap-2 text-[18px] font-medium text-gray-900 hover:text-gray-500 transition-colors">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/images/download-cv.png" alt="" width={16} height={16} className="w-4 h-4" />
                   <span>Download CV</span>
                 </a>
               </div>
@@ -208,13 +205,13 @@ export default function SiteNav() {
           <div className="site-nav__row">
             {/* BRAND / AVATAR */}
             <a className="flex items-center gap-3 text-white no-underline -translate-x-3.5 cursor-pointer" href="#home" onClick={(e) => { e.preventDefault(); scrollToTop(); }}>
-              <Image width={4} height={4} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover bg-slate-800" src="/images/designer-portrait.jpg" alt="Seam Rahman" />
-              <span className="site-nav__name font-extrabold text-sm sm:text-base tracking-wider uppercase">SEAM RAHMAN</span>
+              <Image width={96} height={96} className="w-[56px] h-[56px] rounded-full object-cover bg-slate-800" src="/images/designer-portrait.jpg" alt="Seam Rahman" />
+              <span className="site-nav__name text-[18px] font-semibold tracking-wider uppercase">SEAM RAHMAN</span>
             </a>
 
             {/* ACTIONS */}
             <div className="flex items-center gap-3 text-white">
-              <span id="scrollPercentage" className="font-bold text-sm sm:text-base min-w-[2.5ch] text-right">{scrollPercentage}%</span>
+              <span id="scrollPercentage" className="text-[20px] font-medium min-w-[2.5ch] text-right">{scrollPercentage}%</span>
               <div className="w-[1px] h-4 bg-white/30"></div>
               <button
                 id="menuToggleBtn"
@@ -223,7 +220,7 @@ export default function SiteNav() {
                 onClick={() => setMenuOpen(true)}
               >
                 <span className="site-nav__menu-label">MENU</span>
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <svg className="w-[33px] h-[33px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <line x1="4" y1="7" x2="20" y2="7"></line>
                   <line x1="4" y1="12" x2="20" y2="12"></line>
                   <line x1="4" y1="17" x2="20" y2="17"></line>

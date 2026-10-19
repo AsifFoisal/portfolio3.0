@@ -127,7 +127,7 @@ export default function RadialMenu({ onClose, onNavigate }: RadialMenuProps) {
 
         <g className="ring-group" onClick={() => requestClose()}>
           <circle cx={HUB_X} cy={HUB_Y} r={HUB_RADIUS} fill="#fdf4f3" filter="url(#ring-shadow)" className="ring-path" />
-          <g transform="translate(490, 132)" className="cursor-pointer">
+          <g transform="translate(499, 146)" className="cursor-pointer">
             <rect x="0" y="0" width="30" height="5.5" rx="2.75" fill="#323b44" />
             <rect x="0" y="11" width="42" height="5.5" rx="2.75" fill="#323b44" />
             <rect x="20" y="22" width="22" height="5.5" rx="2.75" fill="#323b44" />

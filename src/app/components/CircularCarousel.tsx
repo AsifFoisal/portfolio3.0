@@ -85,7 +85,7 @@ const PRESETS: Record<PresetName, PresetShape> = {
   },
 };
 
-const INTRO_LENGTH: Record<'assemble' | 'rise' | 'spin' | 'none', number> = { assemble: 1500, rise: 1400, spin: 1800, none: 0 };
+const INTRO_LENGTH: Record<'assemble' | 'rise' | 'spin' | 'none', number> = { assemble: 1500, rise: 700, spin: 1800, none: 0 };
 const TILES = 8;
 const OVERLAP = 2.5;
 const DRAG_THRESHOLD = 5;
@@ -931,7 +931,19 @@ const CircularCarousel = ({
 
   const handlePointerEnter = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== 'mouse') return;
-    stateRef.current.hover = true;
+    // Pause only over an actual card image, not anywhere in the container.
+    const overCard = !!(event.target as HTMLElement | null)?.closest?.('[data-cc-index]');
+    stateRef.current.hover = overCard;
+    wakeRef.current();
+  };
+
+  const handlePointerOver = (event: ReactPointerEvent<HTMLDivElement>) => {
+    // Bubbles from the cards as the pointer travels the container, so the
+    // pause tracks the card under the cursor in real time.
+    if (event.pointerType !== 'mouse') return;
+    const overCard = !!(event.target as HTMLElement | null)?.closest?.('[data-cc-index]');
+    if (stateRef.current.hover === overCard) return;
+    stateRef.current.hover = overCard;
     wakeRef.current();
   };
 
@@ -1052,6 +1064,7 @@ const CircularCarousel = ({
       onPointerUp={releasePointer}
       onPointerCancel={releasePointer}
       onPointerEnter={handlePointerEnter}
+      onPointerOver={handlePointerOver}
       onPointerLeave={handlePointerLeave}
       onClick={handleClick}
       onKeyDown={handleKeyDown}

@@ -31,7 +31,7 @@
   --nav-w: 56.5625rem;
   --nav-h: 5.5rem;
   --pill-h: 4.05rem;
-  --btn: 3.3125rem;
+  --btn: 54px;
 
   position: relative;
   width: 100%;
@@ -138,7 +138,7 @@
   pointer-events: none;
   transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
   box-shadow: 0 -15px 40px rgba(0, 0, 0, 0.12);
-  height: 680px;
+  height: auto; /* grows with content so no scrollbar appears */
   max-height: calc(100vh - 140px);
   overflow-y: auto;
 }
@@ -171,3 +171,14 @@
 .menu-drawer a.text-white { color: #ffffff; }
 .menu-drawer a.text-gray-900 { color: #111827; }
 .menu-drawer a.text-gray-900:hover { color: #6b7280; }
+
+/* Floating navbar sizing */
+.site-nav__menu-label {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.site-nav__arrow {
+  width: 24px;
+  height: 24px;
+}

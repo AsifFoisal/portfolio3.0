@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useAnimationFrame, useMotionValue, useSpring } from 'motion/react';
 import { useSiteContent } from '../data/content-context';
-import { InstagramIcon, WhatsApp3DIcon, WhatsAppIcon } from './Icons';
+import { InstagramIcon, WhatsAppIcon } from './Icons';
 
 function IconBolt() {
   return (
@@ -106,7 +106,7 @@ function FooterMarquee({ whatsappUrl, marqueeText, marqueeSymbol, cursorLabel }:
           <div key={k} aria-hidden={k === 1 || undefined} className="flex shrink-0 items-center">
             {Array.from({ length: 3 }).map((_, j) => (
               <span key={j} className="flex items-center">
-                <span className="footer-marquee-text whitespace-nowrap px-6 text-[clamp(40px,6vw,90px)] font-extrabold uppercase leading-none tracking-wider transition-all duration-500 lg:px-10">
+                <span className="footer-marquee-text whitespace-nowrap px-6 text-[54px] font-semibold uppercase leading-none tracking-wider transition-all duration-500 lg:px-10">
                   {marqueeText}
                 </span>
                 <span className="shrink-0 text-[clamp(22px,3vw,44px)] leading-none text-[#ff4c4e] transition-all duration-1000 group-hover:rotate-180 group-hover:text-[#1a1a1a]">{marqueeSymbol}</span>
@@ -172,14 +172,14 @@ export default function SiteFooter() {
             <div className=" grid grid-cols-1 gap-8 border-b border-gray-100/80 pb-10 md:grid-cols-12 md:gap-6 lg:gap-10 lg:ml-35">
               <div className="flex flex-col justify-between space-y-6 md:col-span-5 lg:col-span-4">
                 <div>
-                  <h2 className="mb-2 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">{footer.name}</h2>
+                  <h2 className="mb-2 text-[29.19px] font-semibold tracking-tight text-gray-900">{footer.name}</h2>
                   <p className="text-sm leading-relaxed font-normal text-gray-500">
                     {footer.blurb}
                   </p>
                 </div>
 
                 <div className="flex items-center space-x-3 pt-1">
-                  <div className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full shadow-sm">
+                  <div className="relative flex h-[117.52px] w-[96.27px] flex-shrink-0 items-center justify-center overflow-hidden">
                     <AvatarIllustration />
                   </div>
 
@@ -191,7 +191,8 @@ export default function SiteFooter() {
                   >
                     <span className="say-hello-btn__text">{footer.sayHelloLabel}</span>
                     <span className="say-hello-btn__badge">
-                      <WhatsApp3DIcon className="say-hello-btn__icon" />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/images/whatsapp-badge.png" alt="" width={28} height={28} className="say-hello-btn__icon" />
                     </span>
                   </a>
                 </div>
@@ -201,7 +202,7 @@ export default function SiteFooter() {
                     href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(footer.email)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-medium text-gray-700 transition hover:text-gray-900"
+                    className="text-[18px] font-medium text-gray-900 transition hover:text-gray-900"
                   >
                     {footer.email}
                   </a>
@@ -210,7 +211,7 @@ export default function SiteFooter() {
                     onClick={copyEmail}
                     aria-label="Copy email address"
                     title="Copy email address"
-                    className="text-xs text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-gray-700 focus-visible:opacity-100 max-sm:opacity-60"
+                    className="text-xs text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-gray-900 focus-visible:opacity-100 max-sm:opacity-60"
                   >
                     <IconCopy />
                   </button>
@@ -219,9 +220,9 @@ export default function SiteFooter() {
 
               <div className="footer-services-column flex flex-col justify-start md:col-span-4 lg:col-span-4">
                 <h3 className="footer-services-heading mb-4 text-xl font-bold text-center text-gray-900">{footer.servicesHeading}</h3>
-                <div className="footer-services-list flex max-w-xs flex-col">
+                <div className="footer-services-list flex flex-col w-full">
                   {content.services.items.map((service) => (
-                    <a key={service.title} href="#services" className="footer-service-link rounded-lg px-4 py-2.5 text-left text-xs font-medium text-gray-800">
+                    <a key={service.title} href="#services" className="footer-service-link rounded-lg px-4 py-2.5 text-left text-[16px] font-medium text-gray-900">
                       {service.title}
                     </a>
                   ))}
@@ -247,8 +248,8 @@ export default function SiteFooter() {
                 <div className="space-y-3 pt-1">
                   <p className="text-xs font-semibold tracking-wide text-gray-700">Follow me on social media</p>
                   <div className="flex items-center justify-center space-x-2.5">
-                    <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="icon-circle" title="LinkedIn" aria-label="LinkedIn"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/linkedin.svg" alt="" width="18" height="18" /></a>
-                    <a href="https://behance.net" target="_blank" rel="noreferrer" className="icon-circle" title="Behance" aria-label="Behance"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/behance.svg" alt="" width="20" height="20" /></a>
+                    <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="icon-circle" title="LinkedIn" aria-label="LinkedIn">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/images/linkedin.png" alt="" width="28" height="28" /></a>
+                    <a href="https://behance.net" target="_blank" rel="noreferrer" className="icon-circle" title="Behance" aria-label="Behance">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/images/behance.png" alt="" width="30" height="30" className="behance-logo" /></a>
                     <a href="https://instagram.com" target="_blank" rel="noreferrer" className="icon-circle" title="Instagram" aria-label="Instagram"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/instagram.svg" alt="" width="20" height="20" /></a>
                   </div>
                 </div>

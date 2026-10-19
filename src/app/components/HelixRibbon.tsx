@@ -64,9 +64,8 @@ const styles = `
     max-width: 100vw;
   }
   
-  /* Accent word in the headline ("LATEST DESIGN"): shares the muted word colour
-     used by the other section headings. */
-  .trionn-ribbon-root .headline h1 .accent-word { color: var(--quiet-word); }
+  /* Accent word in the headline ("DESIGN"): now white like LATEST / WORKS. */
+  .trionn-ribbon-root .headline h1 .accent-word { color: #e8e8e8; }
   
   .trionn-ribbon-root .headline h1 {
     font-weight: 600; 
@@ -579,6 +578,17 @@ export default function TrionnRibbon({ onCarouselItemClick }: { onCarouselItemCl
         let rawProgress = 0;
         let scrollProgress = 0;
 
+        /* ==================== HEADLINE PARALLAX ==================== */
+        // Declared before the ScrollTrigger setup below: trigger creation and
+        // refresh() can fire onUpdate synchronously, and the tick pipeline
+        // reads these elements.
+        const wordA = rootRef.current.querySelector('.word-a') as HTMLElement | null;
+        const wordB = rootRef.current.querySelector('.word-b') as HTMLElement | null;
+        const carouselHost = rootRef.current.querySelector('.ribbon-carousel') as HTMLElement | null;
+        // The synchronously-fired onUpdate above the trigger creation reads
+        // this through updateCarousel, so it must exist before that point.
+        let carouselShown = false;
+
         ScrollTrigger.refresh();
 
         const st = ScrollTrigger.create({
@@ -595,11 +605,6 @@ export default function TrionnRibbon({ onCarouselItemClick }: { onCarouselItemCl
             renderTick();
           },
         });
-
-        /* ==================== HEADLINE PARALLAX ==================== */
-        const wordA = rootRef.current.querySelector('.word-a') as HTMLElement | null;
-        const wordB = rootRef.current.querySelector('.word-b') as HTMLElement | null;
-        const carouselHost = rootRef.current.querySelector('.ribbon-carousel') as HTMLElement | null;
 
         function updateHeadline(): void {
           const p = scrollProgress;
@@ -623,7 +628,6 @@ export default function TrionnRibbon({ onCarouselItemClick }: { onCarouselItemCl
         // top onto the pinned black stage; the pin holds for HOLD_SCROLL more
         // before releasing. Scrolling back up plays the mirror move — the
         // feed sinks top-to-bottom — and re-enters on the next pass down.
-        let carouselShown = false;
 
         function sinkCarousel(): void {
           if (!carouselHost) return;
@@ -655,7 +659,7 @@ export default function TrionnRibbon({ onCarouselItemClick }: { onCarouselItemCl
               {
                 yPercent: 0,
                 opacity: 1,
-                duration: 1.2,
+                duration: 0.6,
                 ease: 'power3.out',
                 onComplete: () => {
                   carouselHost.style.pointerEvents = 'auto';
@@ -799,7 +803,6 @@ export default function TrionnRibbon({ onCarouselItemClick }: { onCarouselItemCl
             intro="rise"
             cardWidth={220}
             speed={14}
-            captions
             fadeColor="#000000"
             onItemClick={onCarouselItemClick}
           />

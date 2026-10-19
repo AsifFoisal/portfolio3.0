@@ -89,10 +89,11 @@ export type WorkProject = {
   description: string;
   /** Image URL; leave blank to use the built-in procedural artwork. */
   image: ImagePath;
-  /** External "live" link, or blank for a disabled link. */
-  liveUrl: string;
-  /** External Figma link, or blank for a disabled link. */
-  figmaUrl: string;
+  /** URL for the "Explore Project" link, or blank for a disabled link. */
+  url: string;
+  /** Legacy fields kept for stored rows written before this field existed. */
+  liveUrl?: string;
+  figmaUrl?: string;
   align: WorkAlign;
   /** Card width, in vw. */
   width: number;
@@ -107,8 +108,6 @@ export type WorkContent = {
   heroLogoDim: ImagePath;
   heroLogoFill: ImagePath;
   heroLogoAlt: string;
-  liveLinkLabel: string;
-  figmaLinkLabel: string;
   projects: WorkProject[];
 };
 

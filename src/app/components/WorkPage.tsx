@@ -24,6 +24,9 @@ import {
   WhatsApp3DIcon,
 } from "./Icons";
 import { useSiteContent } from "../data/content-context";
+import { downloadResume } from "../utils/downloadResume";
+import SiteFooter from "./SiteFooter";
+import { HamburgerIcon } from "./Icons";
 import type { WorkProject } from "../data/content-types";
 import {
   deliverySrcSet,
@@ -42,7 +45,7 @@ import {
  */
 const CARD_WIDTHS = [640, 960, 1280, 1600, 2000] as const;
 const CARD_MAX_WIDTH = 1600;
-const HERO_THUMB_WIDTH = 600;
+const HERO_THUMB_WIDTH = 900;
 
 type Align = "l" | "r" | "c";
 type ArtKey = keyof typeof ART;
@@ -52,8 +55,7 @@ interface Project {
   desc: string;
   art: ArtKey;
   image: string;
-  liveUrl: string;
-  figmaUrl: string;
+  url: string;
   align: Align;
   width: number;
 }
@@ -78,8 +80,7 @@ const normalize = (p: WorkProject, i: number): Project => ({
   desc: p.description || "",
   art: isArtKey(p.art) ? p.art : FB[i % FB.length],
   image: p.image || "",
-  liveUrl: toHref(p.liveUrl),
-  figmaUrl: toHref(p.figmaUrl),
+  url: toHref(p.url || p.liveUrl || p.figmaUrl),
   align: isAlign(p.align) ? p.align : LAY[i % LAY.length][0],
   width: Number(p.width) > 0 ? Number(p.width) : LAY[i % LAY.length][1],
 });
@@ -515,15 +516,21 @@ export default function WorkPage() {
             dv.tx = Math.cos(a) * rr * dv.ax;
             dv.ty = Math.sin(a) * rr * dv.ay;
           }
-          let x = d.x * W + dv.cx * W + Math.sin(t * 0.6 + i) * 4 + mx * d.z * 30;
+          const cw = Math.min(W, 1320);
+          const cl = (W - cw) / 2;
+          const s = d.w * cw * 1.8 * (1 - 0.88 * e);
+          let x = cl + d.x * cw + dv.cx * cw + Math.sin(t * 0.6 + i) * 4 + mx * d.z * 30;
           let y = d.y * H + dv.cy * H + Math.cos(t * 0.5 + i * 1.3) * 3 + my * d.z * 20;
-          x += (W / 2 - x) * e; y += (H * 0.4 - y) * e;
+          x += (cl + cw / 2 - x) * e; y += (H * 0.4 - y) * e;
+          x = clamp(x, cl + s / 2 + 6, cl + cw - s / 2 - 6);
           m.position.set(x, -(sc + y), 1);
-          const s = d.w * W * 1.45 * (1 - 0.88 * e);
           m.scale.set(s, s / 1.43, 1);
           const mat = m.material as THREE.MeshBasicMaterial;
-          mat.opacity = (0.62 + 0.38 * Math.sin(t * 0.5 + i * 2)) * (1 - Math.pow(e, 6));
-          m.visible = e < 0.999;
+          // Vanish and reappear: each card fades fully out then back in on its
+          // own slow cycle, so at any moment some cards are absent.
+          const cycle = 0.5 + 0.5 * Math.sin(t * 0.32 + i * 1.7);
+          mat.opacity = Math.pow(cycle, 1.6) * (1 - Math.pow(e, 6));
+          m.visible = e < 0.999 && cycle > 0.02;
         });
         logoEl.style.setProperty("--lp", (fill / n).toFixed(4));
         segs.forEach((s) => {
@@ -584,6 +591,7 @@ export default function WorkPage() {
             const loader = new THREE.TextureLoader();
             loader.setCrossOrigin("anonymous");
             loader.load(src, (t) => {
+              t.anisotropy = renderer.capabilities.getMaxAnisotropy();
               mat.map?.dispose();
               mat.map = t;
               mat.color.set(0xffffff);
@@ -707,24 +715,29 @@ export default function WorkPage() {
         rel="stylesheet"
       />
 
+      <div className="wk-page">
       <canvas id="gl" ref={glRef} />
       <div className="ring" ref={ringRef} />
 
       <header>
-        <Link className="brand" href="/" aria-label="Back to home">
-          {work?.brandName || "Seam Rahman"}
-          <sup>®</sup>
-        </Link>
         <div className="nav">
-          <button className="pill w" type="button">Let&apos;s talk</button>
+          {/* Main-page header buttons (CV + hamburger Menu) */}
           <button
-            className="pill"
+            className="cv-button"
+            type="button"
+            onClick={() => downloadResume(content.experience.items)}
+          >
+            Curriculum Vitae | CV
+          </button>
+          <button
+            className="menu-button"
             type="button"
             aria-haspopup="dialog"
             aria-expanded={menuOpen}
+            aria-label="Open navigation menu"
             onClick={() => setMenuOpen(true)}
           >
-            Menu &nbsp;=
+            <HamburgerIcon className="menu-button-icon" />
           </button>
         </div>
       </header>
@@ -777,7 +790,7 @@ export default function WorkPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className="fill" alt={work?.heroLogoAlt || "Seam Rahman"} src={work?.heroLogoFill || "/logo-fill.png"} />
           </div>
-          <h1>{work?.heroTitle || "My work"}</h1>
+          <h1>{work?.heroTitle || "ALL PROJECTS"}</h1>
         </div>
       </section>
 
@@ -790,19 +803,18 @@ export default function WorkPage() {
               <a
                 className={`card ${p.align}`}
                 href={p.liveUrl || undefined}
-                style={{ width: `${p.width}vw` }}
+                style={{ width: `calc(var(--wk-c) * ${p.width} / 100)` }}
                 {...(p.liveUrl ? { target: "_blank", rel: "noreferrer" } : {})}
               >
                 <CardVisual p={p} priority={i < 3} />
               </a>
-              <div className="meta" style={{ width: `${p.width}vw`, margin }}>
+              <div className="meta" style={{ width: `calc(var(--wk-c) * ${p.width} / 100)`, margin }}>
                 <div>
                   <h3>{p.title}</h3>
                   <p>{p.desc}</p>
                 </div>
                 <div className="meta-links">
-                  <ProjectGo label={work?.liveLinkLabel || "Live Link"} href={p.liveUrl} />
-                  <ProjectGo label={work?.figmaLinkLabel || "Figma Link"} href={p.figmaUrl} />
+                  <ProjectGo label="Explore Project" href={p.url} />
                 </div>
               </div>
             </article>
@@ -810,75 +822,8 @@ export default function WorkPage() {
         })}
       </main>
 
-      <footer className="wk-footer">
-        <div className="wk-footer__grid">
-          <div className="wk-footer__intro">
-            <h2>{footer.name}</h2>
-            <p>{footer.blurb}</p>
-
-            <div className="wk-footer__cta">
-              <span className="wk-footer__avatar">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="wk-footer__face" src={content.about?.face || "/images/face.png"} alt={footer.name} />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="wk-footer__face wk-footer__face--hover" src={content.about?.faceHover || content.about?.face || "/images/face.png"} alt="" aria-hidden="true" />
-              </span>
-              <a className="wk-hello" href={footer.whatsappUrl} target="_blank" rel="noreferrer">
-                <span className="wk-hello__text">{footer.sayHelloLabel}</span>
-                <span className="wk-hello__badge"><WhatsApp3DIcon /></span>
-              </a>
-            </div>
-
-            <a className="wk-footer__mail" href={`mailto:${footer.email}`}>{footer.email}</a>
-          </div>
-
-          <div className="wk-footer__services">
-            <h3>{footer.servicesHeading}</h3>
-            <ul>
-              {services.items.map((service) => (
-                <li key={service.title}><Link href="/#services">{service.title}</Link></li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="wk-footer__tools">
-            <div>
-              <p className="wk-footer__cap">{footer.askAiLabel}</p>
-              <div className="wk-footer__icons">
-                <a className="wk-ic" href="https://chatgpt.com/?q=Seam%20Rahman%20UI%20UX" target="_blank" rel="noreferrer" aria-label="Ask ChatGPT about Seam Rahman"><OpenAIIcon /></a>
-                <a className="wk-ic" href="https://grok.com/?q=Seam%20Rahman%20UI%20UX" target="_blank" rel="noreferrer" aria-label="Ask Grok about Seam Rahman"><GrokIcon /></a>
-                <a className="wk-ic" href="https://www.perplexity.ai/search/new?q=Seam%20Rahman%20UI%20UX" target="_blank" rel="noreferrer" aria-label="Ask Perplexity about Seam Rahman"><PerplexityIcon /></a>
-              </div>
-            </div>
-
-            <Link className="wk-footer__projects" href="/work" scroll={false}>View all projects</Link>
-
-            <div>
-              <p className="wk-footer__cap">Follow me on social media</p>
-              <div className="wk-footer__icons">
-                <a className="wk-ic" href="https://linkedin.com" target="_blank" rel="noreferrer" aria-label="LinkedIn"><LinkedInIcon /></a>
-                <a className="wk-ic" href="https://behance.net" target="_blank" rel="noreferrer" aria-label="Behance"><BehanceIcon /></a>
-                <a className="wk-ic" href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><InstagramIcon /></a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <a className="wk-footer__marquee" href={footer.whatsappUrl} target="_blank" rel="noreferrer" aria-label={`${footer.marqueeText} on WhatsApp`}>
-          <div className="wk-footer__track">
-            {[0, 1].map((k) => (
-              <div className="wk-footer__group" key={k} aria-hidden={k === 1 || undefined}>
-                {Array.from({ length: 6 }).map((_, j) => (
-                  <span className="wk-footer__word" key={j}>
-                    {footer.marqueeText}
-                    <span className="wk-footer__sym">{footer.marqueeSymbol}</span>
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
-        </a>
-      </footer>
+      </div>
+      <SiteFooter />
 
       <style jsx global>{`
         :root {
@@ -887,9 +832,45 @@ export default function WorkPage() {
           --mut: #8b8b92;
           color-scheme: dark;
         }
-        *,
-        *::before,
-        *::after {
+        .wk-page {
+          position: relative;
+          --wk-c: min(1320px, 100vw);
+        }
+        .wk-page::before,
+        .wk-page::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          width: 1px;
+          z-index: 3;
+          border-left: 1px dashed #9a9a9a66;
+          pointer-events: none;
+        }
+        .wk-page::before {
+          left: max(0px, calc((100% - 1320px) / 2 - 4px));
+        }
+        .wk-page::after {
+          right: max(0px, calc((100% - 1320px) / 2 - 4px));
+        }
+        .wk-page .list {
+          padding-inline: max(0px, calc((100% - 1320px) / 2));
+        }
+        .wk-page header {
+          gap: 24px;
+          padding: calc(env(safe-area-inset-top, 0px) + 22px) max(24px, calc((100% - 1320px) / 2 + 20px)) 0 max(24px, calc((100% - 1320px) / 2 + 20px));
+        }
+        .wk-page .nav {
+          gap: 24px;
+          margin-left: auto;
+        }
+        .wk-page .cv-button {
+          padding: 0 18px;
+        }
+        .wk-page :where(*, *::before, *::after),
+        .wk-page,
+        .wk-page::before,
+        .wk-page::after {
           box-sizing: border-box;
           margin: 0;
           padding: 0;
@@ -905,7 +886,8 @@ export default function WorkPage() {
         .lenis.lenis-smooth {
           scroll-behavior: auto !important;
         }
-        body {
+        /* Scoped so the shared SiteFooter keeps the main-page environment. */
+        body:has(.wk-page) {
           background: var(--bg);
           color: var(--fg);
           font-family: "Bai Jamjuree", Helvetica, Arial, sans-serif;
@@ -920,6 +902,13 @@ export default function WorkPage() {
           z-index: 0;
           pointer-events: none;
         }
+        /* Keep the shared footer's black texts even though this page sets its
+           own body font/color. */
+        footer.site-footer a:not(.say-hello-btn):not(.footer-projects-button):not(.group),
+        footer.site-footer .footer-services-heading {
+          color: #111827 !important;
+        }
+
         header {
           position: fixed;
           top: 0;
@@ -1034,8 +1023,8 @@ export default function WorkPage() {
           right: 0;
           transform: translateY(-50%);
           font-family: "Bai Jamjuree", Helvetica, Arial, sans-serif;
-          font-weight: 400;
-          font-size: 68px;
+          font-weight: 600;
+          font-size: 120px;
           letter-spacing: -0.055em;
           color: #d9d9d9;
           line-height: 1;
@@ -1096,7 +1085,7 @@ export default function WorkPage() {
         }
         .meta p {
           margin-top: 9px;
-          font-size: 13px;
+          font-size: 14px;
           line-height: 1.25;
           color: var(--mut);
           max-width: 255px;
@@ -1107,7 +1096,7 @@ export default function WorkPage() {
           width: 185px;
           display: flex;
           justify-content: space-between;
-          font: 500 10.5px "Bai Jamjuree", sans-serif;
+          font: 500 16px "Bai Jamjuree", sans-serif;
           letter-spacing: 0.02em;
           text-transform: uppercase;
           color: #fff;

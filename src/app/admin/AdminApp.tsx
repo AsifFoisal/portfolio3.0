@@ -29,7 +29,7 @@ const FIELD_ORDER: Record<string, string[]> = {
   stories: ['captionTitle', 'captionText', 'captionEyebrow', 'videoUrl', 'poster', 'mobileTitleTop', 'mobileTitleBottom'],
   latest: ['heading', 'items'],
   helix: ['items', 'image'],
-  work: ['brandName', 'heroTitle', 'projects', 'heroLogoDim', 'heroLogoFill', 'heroLogoAlt', 'liveLinkLabel', 'figmaLinkLabel', 'title', 'description', 'image', 'liveUrl', 'figmaUrl', 'align', 'width', 'art'],
+  work: ['brandName', 'heroTitle', 'projects', 'heroLogoDim', 'heroLogoFill', 'heroLogoAlt', 'title', 'description', 'image', 'url', 'align', 'width', 'art'],
   approach: ['heading', 'steps'],
   experience: ['heading', 'items'],
   testimonials: ['heading', 'eyebrow', 'items'],
@@ -313,10 +313,13 @@ function JsonArray({ label, value, onChange, section }: { label: string; value: 
 }
 
 function JsonObject({ label, value, onChange, section }: { label: string; value: { [key: string]: JsonValue }; onChange: (value: { [key: string]: JsonValue }) => void; section: string }) {
+  const entries = orderedEntries(value, section).filter(
+    ([key]) => !(section === 'latest' && (key === 'title' || key === 'subtitle'))
+  );
   return (
     <fieldset className="admin-object">
       {label && <legend className="admin-legend">{label}</legend>}
-      {orderedEntries(value, section).map(([key, child]) => (
+      {entries.map(([key, child]) => (
         <JsonNode key={key} label={humanize(key)} value={child} onChange={(childValue) => onChange({ ...value, [key]: childValue })} section={section} />
       ))}
     </fieldset>
