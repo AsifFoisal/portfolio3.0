@@ -802,9 +802,9 @@ export default function WorkPage() {
             <article className="item" key={`${p.title}-${i}`}>
               <a
                 className={`card ${p.align}`}
-                href={p.liveUrl || undefined}
+                href={p.url || undefined}
                 style={{ width: `calc(var(--wk-c) * ${p.width} / 100)` }}
-                {...(p.liveUrl ? { target: "_blank", rel: "noreferrer" } : {})}
+                {...(p.url ? { target: "_blank", rel: "noreferrer" } : {})}
               >
                 <CardVisual p={p} priority={i < 3} />
               </a>
