@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode, type RefObject } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -16,7 +16,7 @@ import ScrollStack, { ScrollStackItem } from './ScrollStack';
 import SiteFooter from './SiteFooter';
 import SiteNav from './SiteNav';
 import RadialMenu from './RadialMenu';
-import { ArrowIcon, HamburgerIcon, PhoneIcon, TurnArrowIcon } from './Icons';
+import { ArrowIcon, HamburgerIcon, PhoneIcon, TurnArrowIcon, WhatsAppIcon } from './Icons';
 import { ContentProvider, SectionHeading, useSiteContent } from '../data/content-context';
 import type { Project, Service, SiteContent } from '../data/content-types';
 import { downloadResume } from '../utils/downloadResume';
@@ -30,8 +30,12 @@ type Overlay =
   | { kind: 'gallery'; index: number }
   | null;
 
-function CallButton({ children, onClick }: { children: string; onClick: () => void }) {
-  return <button className="call-button" onClick={onClick}>{children}<span className="call-button-icon"><PhoneIcon /></span></button>;
+function CallButton({ children, onClick, href, icon }: { children: string; onClick?: () => void; href?: string; icon?: ReactNode }) {
+  const glyph = icon ?? <PhoneIcon />;
+  if (href) {
+    return <a className="call-button" href={href} target="_blank" rel="noreferrer">{children}<span className="call-button-icon">{glyph}</span></a>;
+  }
+  return <button className="call-button" onClick={onClick}>{children}<span className="call-button-icon">{glyph}</span></button>;
 }
 
 function VideoPoster({ rounded = false, expandOnScroll = false }: { rounded?: boolean; expandOnScroll?: boolean }) {
@@ -593,7 +597,7 @@ export default function Portfolio({ content }: { content: SiteContent }) {
             />
             <div className="hero-description">
               <p>{content.hero.description}</p>
-              <CallButton onClick={() => setOverlay({ kind: 'contact', intent: 'project' })}>{content.hero.ctaLabel}</CallButton>
+              <CallButton href={content.footer.whatsappUrl} icon={<WhatsAppIcon />}>{content.hero.ctaLabel}</CallButton>
             </div>
           </div>
           <h1 className="hero-title tech-title-frame">
