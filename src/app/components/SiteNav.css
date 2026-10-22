@@ -7,7 +7,7 @@
   --font-nav: var(--font-display, var(--font-jamjuree), 'Bai Jamjuree', sans-serif);
 
   position: fixed;
-  bottom: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translate(-50%, calc(100% + 40px));
   opacity: 0;
@@ -46,17 +46,6 @@
     --nav-h: 6.7rem;
     --pill-h: 4.85rem;
     --btn: 3.55rem;
-  }
-}
-
-@media (max-width: 560px) {
-  .site-nav {
-    --nav-h: 5.85rem;
-    --pill-h: 4.25rem;
-    --btn: 3.15rem;
-  }
-  .site-nav__name, .site-nav__menu-label {
-    display: none;
   }
 }
 
@@ -181,4 +170,75 @@
 .site-nav__arrow {
   width: 24px;
   height: 24px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Phone layout — declared last so it wins over the base rules above. */
+/* ------------------------------------------------------------------ */
+@media (max-width: 560px) {
+  .site-nav {
+    --nav-h: 4.4rem;
+    --pill-h: 4.4rem;
+    --btn: 2.6rem;
+  }
+
+  /* The desktop notch shape is a stretched SVG (elliptical corners distort on
+     narrow widths, reading as an oval). Phones get a true CSS pill instead:
+     circular ends, to-top button centered inside. */
+  .site-nav__shape {
+    display: none;
+  }
+
+  .site-nav::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--color-nav);
+    border-radius: 9999px;
+    z-index: 1;
+  }
+
+  .site-nav__to-top {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .site-nav__to-top:hover {
+    transform: translateY(-50%) scale(1.03);
+  }
+
+  /* Compact row: avatar on the left, hamburger on the right — the name,
+     scroll percentage, divider and MENU label are dropped. */
+  .site-nav__name,
+  .site-nav__menu-label,
+  #scrollPercentage,
+  .site-nav__row .w-\[1px\] {
+    display: none;
+  }
+
+  .site-nav__row {
+    padding: 0 0.95rem;
+  }
+
+  .site-nav__row .gap-3,
+  .site-nav__row .gap-2 {
+    gap: 7px;
+  }
+
+  .site-nav__row img {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .site-nav__row button svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  /* Nudge the avatar right: cancel the desktop optical left-offset
+     (Tailwind v4 sets the standalone `translate` property, not transform),
+     so it sits in from the pill edge with proper breathing room. */
+  .site-nav__row > a {
+    translate: 0 0;
+  }
 }

@@ -2105,7 +2105,9 @@ p {
   background: #191919;
   border: 1px solid #383838;
   padding: 12px 14px;
-  font-size: 14px;
+  /* 16px is the floor for iOS: smaller text makes Safari zoom the whole page
+     when a field gains focus. */
+  font-size: 16px;
   color: #fafafa;
   border-radius: 0;
 }
@@ -2690,6 +2692,12 @@ p {
   .experience-stack .experience-header {
     padding-top: 44px;
     padding-bottom: 24px;
+  }
+
+  /* The company block has a wide desktop min-width; on phones it must follow
+     the viewport or its text gets clipped by the card's overflow. */
+  .experience-stack .experience-company {
+    min-width: 0;
   }
 
   .experience-stack .experience-header p {
