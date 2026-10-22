@@ -16,13 +16,14 @@ import ScrollStack, { ScrollStackItem } from './ScrollStack';
 import SiteFooter from './SiteFooter';
 import SiteNav from './SiteNav';
 import RadialMenu from './RadialMenu';
-import { ArrowIcon, HamburgerIcon, PhoneIcon, TurnArrowIcon, WhatsAppIcon } from './Icons';
+import { ArrowIcon, HamburgerIcon, PhoneIcon, TurnArrowIcon } from './Icons';
 import { ContentProvider, SectionHeading, useSiteContent } from '../data/content-context';
 import type { Project, Service, SiteContent } from '../data/content-types';
 import { downloadResume } from '../utils/downloadResume';
 import { cn } from '../utils/cn';
 import HelixRibbon from './HelixRibbon';
 import PushLoader from './PushLoader';
+import TargetCursor from './TargetCursor';
 
 type Overlay =
   | { kind: 'menu' }
@@ -30,12 +31,12 @@ type Overlay =
   | { kind: 'gallery'; index: number }
   | null;
 
-function CallButton({ children, onClick, href, icon }: { children: string; onClick?: () => void; href?: string; icon?: ReactNode }) {
+function CallButton({ children, onClick, href, icon, cursorLabel }: { children: string; onClick?: () => void; href?: string; icon?: ReactNode; cursorLabel?: string }) {
   const glyph = icon ?? <PhoneIcon />;
   if (href) {
-    return <a className="call-button" href={href} target="_blank" rel="noreferrer">{children}<span className="call-button-icon">{glyph}</span></a>;
+    return <a className="call-button cursor-target" data-cursor-label={cursorLabel} href={href} target="_blank" rel="noreferrer">{children}<span className="call-button-icon">{glyph}</span></a>;
   }
-  return <button className="call-button" onClick={onClick}>{children}<span className="call-button-icon">{glyph}</span></button>;
+  return <button className="call-button cursor-target" data-cursor-label={cursorLabel} onClick={onClick}>{children}<span className="call-button-icon">{glyph}</span></button>;
 }
 
 function VideoPoster({ rounded = false, expandOnScroll = false }: { rounded?: boolean; expandOnScroll?: boolean }) {
@@ -253,8 +254,9 @@ function ServiceCard({ service, index, isOpen, onToggle }: { service: Service; i
   }
 
   return (
-    <article
-      className={`service-item ${isOpen ? 'is-open' : ''} ${hovering ? 'service-item-cursor-active' : ''}`}
+      <article
+        className={`service-item cursor-target ${isOpen ? 'is-open' : ''} ${hovering ? 'service-item-cursor-active' : ''}`}
+        data-cursor-label={service.title}
       onMouseMove={trackPointer}
       onMouseLeave={() => setHovering(false)}
     >
@@ -320,7 +322,7 @@ function FeaturedWorks() {
         </aside>
         <div className="featured-cards" ref={cardsRef}>
           {projects.map((project, index) => (
-            <article className="featured-card" key={`${project.title}-${index}`}>
+            <article className="featured-card cursor-target" key={`${project.title}-${index}`} data-cursor-label={project.title}>
               <div className="project-image-button">
                 <Image src={project.image} alt={project.title} width={1024} height={1024} loading="lazy" />
               </div>
@@ -571,8 +573,8 @@ export default function Portfolio({ content }: { content: SiteContent }) {
       <a className="skip-link" href="#main">Skip to content</a>
       <div className="portfolio-rail-content">
       <header className="site-header page-width" id="home">
-        <button className="cv-button" onClick={() => downloadResume(content.experience.items)}>Curriculum Vitae | CV</button>
-        <button className="menu-button" onClick={() => setOverlay({ kind: 'menu' })} aria-label="Open navigation menu" aria-haspopup="dialog" aria-expanded={overlay?.kind === 'menu'}>
+        <button className="cv-button cursor-target" onClick={() => downloadResume(content.experience.items)} data-cursor-label="Download CV">Curriculum Vitae | CV</button>
+        <button className="menu-button cursor-target" onClick={() => setOverlay({ kind: 'menu' })} aria-label="Open navigation menu" aria-haspopup="dialog" aria-expanded={overlay?.kind === 'menu'} data-cursor-label="Menu">
           <HamburgerIcon className="menu-button-icon" />
         </button>
       </header>
@@ -597,7 +599,7 @@ export default function Portfolio({ content }: { content: SiteContent }) {
             />
             <div className="hero-description">
               <p>{content.hero.description}</p>
-              <CallButton href={content.footer.whatsappUrl} icon={<WhatsAppIcon />}>{content.hero.ctaLabel}</CallButton>
+              <CallButton href={content.footer.whatsappUrl} icon={<Image src="/images/call-button-phone.png" alt="" width={12} height={12} />} cursorLabel="Chat on WhatsApp">{content.hero.ctaLabel}</CallButton>
             </div>
           </div>
           <h1 className="hero-title tech-title-frame">
@@ -648,7 +650,7 @@ export default function Portfolio({ content }: { content: SiteContent }) {
         <div className="page-width side-rails services-and-stories">
           <section className="services-section" id="services" aria-labelledby="services-title">            <div className="services-heading">
               <div><p className="eyebrow">{content.services.eyebrow} <TurnArrowIcon /></p><h2 className="section-title" id="services-title"><SectionHeading heading={content.services.heading} /></h2></div>
-              <CallButton onClick={() => setOverlay({ kind: 'contact', intent: 'call' })}>{content.services.callLabel}</CallButton>
+              <CallButton onClick={() => setOverlay({ kind: 'contact', intent: 'call' })} cursorLabel="Book a call">{content.services.callLabel}</CallButton>
             </div>
              <div className="service-list">
                {content.services.items.map((service, index) => {
@@ -692,11 +694,12 @@ export default function Portfolio({ content }: { content: SiteContent }) {
 
       <SiteFooter />
       <SiteNav />
+      <TargetCursor spinDuration={2} hideDefaultCursor parallaxOn />
 
       {overlay?.kind === 'menu' && <RadialMenu onClose={closeOverlay} onNavigate={navigateTo} />}
       {overlay?.kind === 'contact' && <Dialog label={overlay.intent === 'call' ? 'Book a discovery call' : 'Contact Seam Rahman'} className="contact-dialog" onClose={closeOverlay}><ContactForm intent={overlay.intent} /></Dialog>}
       {overlay?.kind === 'gallery' && galleryItem && <Dialog label={`${galleryItem.title} design`} className="gallery-dialog" onClose={closeOverlay}>
-        <div className="gallery-dialog-content"><Image src={galleryItem.src} alt={galleryItem.alt} width={1024} height={1024} /><div className="gallery-dialog-footer"><div><p className="dialog-eyebrow">LATEST DESIGN WORK / 0{overlay.index + 1}</p><h2>{galleryItem.title}</h2></div><a className="outline-button" href={galleryItem.src} download={`${galleryItem.title.toLowerCase().replace(/\s+/g, '-')}.jpg`}>Download design <ArrowIcon /></a></div></div>
+        <div className="gallery-dialog-content"><Image src={galleryItem.src} alt={galleryItem.alt} width={1024} height={1024} /></div>
       </Dialog>}
     </ContentProvider>
   );

@@ -30,7 +30,7 @@
     sit just outside the centred 1320px column, keeping the original 40px gap
     from the content edge.
   */
-  --rail-x: calc(max(0px, (100% - 1320px) / 2 - 44px) + 4px);
+  --rail-x: calc(max(0px, (100% - 1320px) / 2 - 14px) + 4px);
 }
 
 
@@ -262,8 +262,8 @@ p {
   white-space: nowrap;
   margin-top: calc(24 * var(--unit));
   gap: calc(10 * var(--unit));
-  height: auto;
-  padding: 18px 24px;
+  height: 48px;
+  padding: 0 24px;
   border-radius: calc(12 * var(--unit));
   border: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 16px;
@@ -306,6 +306,12 @@ p {
   /* 22.4px svg renders the phone glyph at ~16x16 (glyph fills ~71% of viewBox). */
   width: 22.4px;
   height: 22.4px;
+}
+
+/* Hero CTA uses the exported 12x12 phone PNG; fixed at 12px on all breakpoints. */
+.hero-description .call-button-icon img {
+  width: 12px;
+  height: 12px;
 }
 
 .hero-title {
@@ -587,12 +593,11 @@ p {
   bottom: 0;
 }
 
-.about-stats>div {
-  text-align: center;
-}
-
-.about-stats>div:first-child {
-  text-align: left;
+/* The number anchors each stat (flush with the copy edge, evenly spaced);
+   its label hangs centered beneath the counter. */
+.about-stats>div:not(.about-face) {
+  position: relative;
+  justify-self: start;
 }
 
 .about-stats strong {
@@ -614,8 +619,13 @@ p {
 }
 
 .about-stats p {
-  font-size: calc(14 * var(--unit));
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
   margin-top: calc(10 * var(--unit));
+  white-space: nowrap;
+  font-size: calc(14 * var(--unit));
   color: #414149;
 }
 
@@ -1492,7 +1502,7 @@ p {
 }
 
 .large-heading {
-  font-size: 74px;
+  font-size: 58px;
   line-height: 1.2;
   font-weight: 700;
   letter-spacing: calc(-2.3 * var(--unit));
@@ -1646,7 +1656,7 @@ p {
 .experience-stack .experience-header {
   height: auto;
   flex-shrink: 0;
-  padding-top: calc(110 * var(--unit));
+  padding-top: 54px;
   padding-bottom: calc(48 * var(--unit));
 }
 
@@ -1674,7 +1684,7 @@ p {
 }
 
 .experience-stack .experience-details {
-  align-content: center;
+  align-content: start;
   flex: 1;
   padding-top: calc(90 * var(--unit));
   padding-bottom: calc(90 * var(--unit));
@@ -2220,29 +2230,6 @@ p {
   background: #050505;
 }
 
-.gallery-dialog-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 25px;
-}
-
-.gallery-dialog-footer .dialog-eyebrow {
-  margin-bottom: 10px;
-  font-size: 9px;
-}
-
-.gallery-dialog-footer h2 {
-  margin-bottom: 0;
-  font-size: 23px;
-  letter-spacing: -.5px;
-}
-
-.gallery-dialog-footer .outline-button {
-  font-size: 12px;
-}
-
 @keyframes introduction-in {
   from {
     opacity: 0;
@@ -2303,13 +2290,13 @@ p {
   }
 
   .menu-button {
-    width: 44px;
-    height: 44px;
+    width: 28px;
+    height: 28px;
   }
 
   .menu-button-icon {
-    width: 19px;
-    height: auto;
+    width: 12px;
+    height: 12px;
   }
 
   .menu-button span {

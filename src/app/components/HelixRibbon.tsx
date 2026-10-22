@@ -803,6 +803,8 @@ export default function TrionnRibbon({ onCarouselItemClick }: { onCarouselItemCl
             intro="rise"
             cardWidth={220}
             speed={14}
+            depthFade={0}
+            innerShade={1}
             fadeColor="#000000"
             onItemClick={onCarouselItemClick}
           />

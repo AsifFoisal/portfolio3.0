@@ -27,6 +27,7 @@ import { useSiteContent } from "../data/content-context";
 import { downloadResume } from "../utils/downloadResume";
 import SiteFooter from "./SiteFooter";
 import { HamburgerIcon } from "./Icons";
+import TargetCursor from "./TargetCursor";
 import type { WorkProject } from "../data/content-types";
 import {
   deliverySrcSet,
@@ -364,7 +365,6 @@ export default function WorkPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const listRef = useRef<HTMLElement>(null);
   const glRef = useRef<HTMLCanvasElement>(null);
-  const ringRef = useRef<HTMLDivElement>(null);
   const logoRef = useRef<HTMLDivElement>(null);
   const projectsRef = useRef(projects);
   const engineRef = useRef<{ setProjects: (p: Project[]) => void; rebuild: () => void } | null>(null);
@@ -388,7 +388,7 @@ export default function WorkPage() {
 
     document.fonts.ready.then(() => {
       if (disposed) return;
-      const canvas = glRef.current!, ring = ringRef.current!, logoEl = logoRef.current!, list = listRef.current!;
+      const canvas = glRef.current!, logoEl = logoRef.current!, list = listRef.current!;
 
       const lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9 });
       lenis.scrollTo(0, { immediate: true });
@@ -415,24 +415,33 @@ export default function WorkPage() {
       let current: Project[] = [];
       let ctx: gsap.Context | null = null;
 
-      const thumbs = TH.map((a) => {
+        const thumbs = TH.map((a) => {
         const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: null, transparent: true }));
-        // Each thumbnail wanders: it eases toward a random point in its area,
-        // then picks a new one — organic drifting with varied speed.
-        const ax = 0.035 + Math.random() * 0.045;
-        const ay = 0.03 + Math.random() * 0.04;
+        // Each thumbnail floats on layered sinusoids with per-card random
+        // amplitudes, frequencies and phases. The two layers per axis use
+        // incommensurate speeds, so the combined path never visibly repeats —
+        // continuous, silky water-like floating with no steering.
         const a0 = Math.random() * Math.PI * 2;
-        const r0 = Math.sqrt(Math.random());
+        const s0 = Math.random() * Math.PI * 2;
         m.userData = {
           x: a[1], y: a[2], w: a[3], z: a[4], k: a[0],
           dp: {
-            ax,
-            ay,
-            cx: 0,
-            cy: 0,
-            tx: Math.cos(a0) * r0 * ax,
-            ty: Math.sin(a0) * r0 * ay,
-            vx: 0.008 + Math.random() * 0.009,
+            xa: 9 + Math.random() * 12,
+            xf: 1.3 + Math.random() * 0.9,
+            xp: a0,
+            ya: 14 + Math.random() * 18,
+            yf: 1.6 + Math.random() * 1.0,
+            yp: s0,
+            xb: 3 + Math.random() * 6,
+            xf2: 2.9 + Math.random() * 1.5,
+            xb2: Math.random() * Math.PI * 2,
+            yb: 4 + Math.random() * 6,
+            yf2: 3.2 + Math.random() * 1.6,
+            yb2: Math.random() * Math.PI * 2,
+            // Vanish cycle: slow and rare — long stretches afloat, then the
+            // card melts fully out at its own pace and returns.
+            vf: 0.15 + Math.random() * 0.2,
+            vp: Math.random() * Math.PI * 2,
           },
         };
         scene.add(m);
@@ -506,31 +515,31 @@ export default function WorkPage() {
           const q = clamp((HP - (ORDER[i] / n) * 0.86) / 0.14), e = q * q * (3 - 2 * q);
           fill += e;
           const dv = d.dp;
-          // wander: ease toward the target, pick a new one once it is close —
-          // natural speed-ups / pauses instead of a repeating sine loop.
-          dv.cx += (dv.tx - dv.cx) * dv.vx;
-          dv.cy += (dv.ty - dv.cy) * dv.vx;
-          if (Math.hypot(dv.tx - dv.cx, dv.ty - dv.cy) < 0.012) {
-            const a = Math.random() * Math.PI * 2;
-            const rr = Math.sqrt(Math.random());
-            dv.tx = Math.cos(a) * rr * dv.ax;
-            dv.ty = Math.sin(a) * rr * dv.ay;
-          }
           const cw = Math.min(W, 1320);
           const cl = (W - cw) / 2;
           const s = d.w * cw * 1.8 * (1 - 0.88 * e);
-          let x = cl + d.x * cw + dv.cx * cw + Math.sin(t * 0.6 + i) * 4 + mx * d.z * 30;
-          let y = d.y * H + dv.cy * H + Math.cos(t * 0.5 + i * 1.3) * 3 + my * d.z * 20;
+          // Two incommensurate sine layers per axis — a smooth primary wave
+          // plus a gentle secondary harmonic, so the drift never loops.
+          const ox =
+            Math.sin(t * dv.xf + dv.xp) * dv.xa +
+            Math.sin(t * dv.xf2 + dv.xb2) * dv.xb;
+          const oy =
+            Math.sin(t * dv.yf + dv.yp) * dv.ya +
+            Math.sin(t * dv.yf2 + dv.yb2) * dv.yb;
+          let x = cl + d.x * cw + ox + mx * d.z * 30;
+          let y = d.y * H + oy + my * d.z * 20;
+          x += (cl + cw / 2 - x) * e; y += (H * 0.4 - y) * e;
           x += (cl + cw / 2 - x) * e; y += (H * 0.4 - y) * e;
           x = clamp(x, cl + s / 2 + 6, cl + cw - s / 2 - 6);
           m.position.set(x, -(sc + y), 1);
           m.scale.set(s, s / 1.43, 1);
           const mat = m.material as THREE.MeshBasicMaterial;
-          // Vanish and reappear: each card fades fully out then back in on its
-          // own slow cycle, so at any moment some cards are absent.
-          const cycle = 0.5 + 0.5 * Math.sin(t * 0.32 + i * 1.7);
-          mat.opacity = Math.pow(cycle, 1.6) * (1 - Math.pow(e, 6));
-          m.visible = e < 0.999 && cycle > 0.02;
+          // Solid while afloat (0.85–1.0), then a smooth sine-backed vanish:
+          // each card dips fully to transparent and returns on its own cycle.
+          // Pure sine crossing means no pops — just a clean sink and rise.
+          const seen = Math.max(0, Math.sin(t * dv.vf + dv.vp));
+          mat.opacity = (0.85 + 0.15 * Math.sin(t * 0.9 + i * 1.7)) * Math.pow(seen, 1.35);
+          m.visible = e < 0.999;
         });
         logoEl.style.setProperty("--lp", (fill / n).toFixed(4));
         segs.forEach((s) => {
@@ -623,27 +632,12 @@ export default function WorkPage() {
         onUpdate: (s) => { HP = s.progress; },
       });
       const h1Tween = gsap.from(".stick h1", { opacity: 0, y: 30, duration: 1.2, ease: "power3.out", delay: 0.2 });
-      const qx = gsap.quickTo(ring, "x", { duration: 0.45, ease: "power3" });
-      const qy = gsap.quickTo(ring, "y", { duration: 0.45, ease: "power3" });
-      qx(window.innerWidth / 2); qy(window.innerHeight * 0.88);
 
       const onMove = (e: PointerEvent) => {
-        qx(e.clientX); qy(e.clientY);
         tx = (e.clientX / window.innerWidth) * 2 - 1;
         ty = (e.clientY / window.innerHeight) * 2 - 1;
       };
       window.addEventListener("pointermove", onMove);
-
-      const onOver = (e: Event) => {
-        if ((e.target as Element).closest(".card")) gsap.to(ring, { scale: 3.2, backgroundColor: "rgba(255,255,255,.12)", duration: 0.4 });
-      };
-      const onOut = (e: PointerEvent) => {
-        const rel = e.relatedTarget as Element | null;
-        if ((e.target as Element).closest(".card") && !(rel && rel.closest && rel.closest(".card")))
-          gsap.to(ring, { scale: 1, backgroundColor: "rgba(255,255,255,0)", duration: 0.4 });
-      };
-      list.addEventListener("pointerover", onOver);
-      list.addEventListener("pointerout", onOut);
 
       const onClick = (e: MouseEvent) => {
         const a = (e.target as Element).closest('a[href="#"]');
@@ -669,8 +663,6 @@ export default function WorkPage() {
         window.removeEventListener("load", re);
         window.removeEventListener("pointermove", onMove);
         document.removeEventListener("click", onClick);
-        list.removeEventListener("pointerover", onOver);
-        list.removeEventListener("pointerout", onOut);
         gsap.ticker.remove(frame);
         gsap.ticker.remove(tick);
         ctx?.revert();
@@ -717,24 +709,25 @@ export default function WorkPage() {
 
       <div className="wk-page">
       <canvas id="gl" ref={glRef} />
-      <div className="ring" ref={ringRef} />
 
       <header>
         <div className="nav">
           {/* Main-page header buttons (CV + hamburger Menu) */}
           <button
-            className="cv-button"
+            className="cv-button cursor-target"
             type="button"
+            data-cursor-label="Download CV"
             onClick={() => downloadResume(content.experience.items)}
           >
             Curriculum Vitae | CV
           </button>
           <button
-            className="menu-button"
+            className="menu-button cursor-target"
             type="button"
             aria-haspopup="dialog"
             aria-expanded={menuOpen}
             aria-label="Open navigation menu"
+            data-cursor-label="Menu"
             onClick={() => setMenuOpen(true)}
           >
             <HamburgerIcon className="menu-button-icon" />
@@ -801,8 +794,9 @@ export default function WorkPage() {
           return (
             <article className="item" key={`${p.title}-${i}`}>
               <a
-                className={`card ${p.align}`}
+                className={`card cursor-target ${p.align}`}
                 href={p.url || undefined}
+                data-cursor-label={p.title}
                 style={{ width: `calc(var(--wk-c) * ${p.width} / 100)` }}
                 {...(p.url ? { target: "_blank", rel: "noreferrer" } : {})}
               >
@@ -824,6 +818,7 @@ export default function WorkPage() {
 
       </div>
       <SiteFooter />
+      <TargetCursor spinDuration={2} hideDefaultCursor parallaxOn />
 
       <style jsx global>{`
         :root {
@@ -835,23 +830,6 @@ export default function WorkPage() {
         .wk-page {
           position: relative;
           --wk-c: min(1320px, 100vw);
-        }
-        .wk-page::before,
-        .wk-page::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          bottom: 0;
-          width: 1px;
-          z-index: 3;
-          border-left: 1px dashed #9a9a9a66;
-          pointer-events: none;
-        }
-        .wk-page::before {
-          left: max(0px, calc((100% - 1320px) / 2 - 4px));
-        }
-        .wk-page::after {
-          right: max(0px, calc((100% - 1320px) / 2 - 4px));
         }
         .wk-page .list {
           padding-inline: max(0px, calc((100% - 1320px) / 2));
@@ -866,6 +844,15 @@ export default function WorkPage() {
         }
         .wk-page .cv-button {
           padding: 0 18px;
+          background: rgba(255, 76, 78, 0.14);
+          -webkit-backdrop-filter: blur(12px);
+          backdrop-filter: blur(12px);
+        }
+        .wk-page .cv-button:hover,
+        .wk-page .cv-button:focus-visible {
+          background: var(--accent);
+          -webkit-backdrop-filter: none;
+          backdrop-filter: none;
         }
         .wk-page :where(*, *::before, *::after),
         .wk-page,
@@ -1024,7 +1011,7 @@ export default function WorkPage() {
           transform: translateY(-50%);
           font-family: "Bai Jamjuree", Helvetica, Arial, sans-serif;
           font-weight: 600;
-          font-size: 120px;
+          font-size: 100px;
           letter-spacing: -0.055em;
           color: #d9d9d9;
           line-height: 1;
@@ -1077,18 +1064,19 @@ export default function WorkPage() {
         }
         .meta h3 {
           font-family: "Bai Jamjuree", Helvetica, Arial, sans-serif;
-          font-weight: 400;
-          font-size: 29px;
+          font-weight: 600;
+          font-size: 34px;
           letter-spacing: -0.04em;
           color: #ececec;
           line-height: 1.1;
         }
         .meta p {
           margin-top: 9px;
-          font-size: 14px;
-          line-height: 1.25;
+          font-size: 16px;
+          font-weight: 500;
+          line-height: 1.3;
           color: var(--mut);
-          max-width: 255px;
+          max-width: 290px;
           letter-spacing: -0.01em;
         }
         .go {
@@ -1117,31 +1105,19 @@ export default function WorkPage() {
           display: flex;
           flex-direction: column;
           align-items: flex-start;
+          align-self: flex-end;
           gap: 12px;
-          margin-top: 6px;
         }
         .meta-links .go {
           margin-top: 0;
         }
         .go.is-disabled {
-          color: var(--mut);
+          color: #fff;
           border-bottom-color: rgba(255, 255, 255, 0.18);
           cursor: not-allowed;
         }
         .go.is-disabled:hover i {
           transform: none;
-        }
-        .ring {
-          position: fixed;
-          left: 0;
-          top: 0;
-          width: 18px;
-          height: 18px;
-          margin: -9px 0 0 -9px;
-          border: 1px solid rgba(255, 255, 255, 0.55);
-          border-radius: 50%;
-          z-index: 99;
-          pointer-events: none;
         }
 
         /* ---------- Menu sidebar ---------- */
@@ -1532,9 +1508,6 @@ export default function WorkPage() {
           .item > * {
             width: 92vw !important;
             margin: 0 auto !important;
-          }
-          .ring {
-            display: none;
           }
           .card {
             cursor: auto;

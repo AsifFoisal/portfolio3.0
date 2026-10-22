@@ -96,7 +96,7 @@ function FooterMarquee({ whatsappUrl, marqueeText, marqueeSymbol, cursorLabel }:
       target="_blank"
       rel="noreferrer"
       aria-label="Let's work together — chat on WhatsApp"
-      className="group relative mt-5 block cursor-none overflow-hidden border-t border-gray-100 pt-8"
+      className="group relative mt-5 block cursor-none overflow-hidden pt-8"
       onMouseEnter={(event) => { setHovering(true); trackPointer(event); }}
       onMouseMove={trackPointer}
       onMouseLeave={() => setHovering(false)}
@@ -169,7 +169,7 @@ export default function SiteFooter() {
 
         <div className="relative mx-auto mt-60 w-[calc(100%-40px)] max-w-[1800px] sm:w-[calc(100%-64px)]">
           <div className="relative overflow-hidden rounded-[32px] border border-gray-100 bg-white px-6 pt-10 pb-6 shadow-2xl sm:px-10 md:px-14">
-            <div className=" grid grid-cols-1 gap-8 border-b border-gray-100/80 pb-10 md:grid-cols-12 md:gap-6 lg:gap-10 lg:ml-35">
+            <div className=" grid grid-cols-1 gap-8 border-b border-gray-100/80 pb-10 md:grid-cols-12 md:gap-6 lg:gap-10 mx-auto max-w-[1320px] lg:translate-x-10">
               <div className="flex flex-col justify-between space-y-6 md:col-span-5 lg:col-span-4">
                 <div>
                   <h2 className="mb-2 text-[29.19px] font-semibold tracking-tight text-gray-900">{footer.name}</h2>
@@ -187,7 +187,8 @@ export default function SiteFooter() {
                     href={footer.whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="say-hello-btn"
+                    className="say-hello-btn cursor-target"
+                    data-cursor-label="WhatsApp"
                   >
                     <span className="say-hello-btn__text">{footer.sayHelloLabel}</span>
                     <span className="say-hello-btn__badge">
@@ -218,11 +219,11 @@ export default function SiteFooter() {
                 </div>
               </div>
 
-              <div className="footer-services-column flex flex-col justify-start md:col-span-4 lg:col-span-4">
+              <div className="footer-services-column flex flex-col justify-start md:col-span-4 lg:col-span-4 lg:w-[323px]">
                 <h3 className="footer-services-heading mb-4 text-xl font-bold text-center text-gray-900">{footer.servicesHeading}</h3>
                 <div className="footer-services-list flex flex-col w-full">
                   {content.services.items.map((service) => (
-                    <a key={service.title} href="#services" className="footer-service-link rounded-lg px-4 py-2.5 text-left text-[16px] font-medium text-gray-900">
+                    <a key={service.title} href="#services" className="footer-service-link cursor-target rounded-lg px-4 py-2.5 text-left text-[16px] font-medium text-gray-900" data-cursor-label={service.title}>
                       {service.title}
                     </a>
                   ))}
@@ -233,14 +234,14 @@ export default function SiteFooter() {
                 <div className="space-y-3">
                   <p className="text-xs font-semibold tracking-wide text-gray-700">{footer.askAiLabel}</p>
                   <div className="flex items-center justify-center space-x-2.5">
-                    <a className="icon-circle" href="https://chatgpt.com/?q=Seam%20Rahman%20UI%20UX" target="_blank" rel="noreferrer" title="Ask ChatGPT" aria-label="Ask ChatGPT about Seam Rahman UI UX"><IconBolt /></a>
-                    <a className="icon-circle" href="https://grok.com/?q=Seam%20Rahman%20UI%20UX" target="_blank" rel="noreferrer" title="Ask Grok" aria-label="Ask Grok about Seam Rahman UI UX"><IconRotate /></a>
-                    <a className="icon-circle" href="https://www.perplexity.ai/search/new?q=Seam%20Rahman%20UI%20UX" target="_blank" rel="noreferrer" title="Ask Perplexity" aria-label="Ask Perplexity about Seam Rahman UI UX"><IconDiagram /></a>
+                    <a className="icon-circle cursor-target" href="https://chatgpt.com/?q=Seam%20Rahman%20UI%20UX" target="_blank" rel="noreferrer" title="Ask ChatGPT" aria-label="Ask ChatGPT about Seam Rahman UI UX"><IconBolt /></a>
+                    <a className="icon-circle cursor-target" href="https://grok.com/?q=Seam%20Rahman%20UI%20UX" target="_blank" rel="noreferrer" title="Ask Grok" aria-label="Ask Grok about Seam Rahman UI UX"><IconRotate /></a>
+                    <a className="icon-circle cursor-target" href="https://www.perplexity.ai/search/new?q=Seam%20Rahman%20UI%20UX" target="_blank" rel="noreferrer" title="Ask Perplexity" aria-label="Ask Perplexity about Seam Rahman UI UX"><IconDiagram /></a>
                   </div>
                 </div>
 
                 <div>
-                  <Link href="/work" scroll={false} className="footer-projects-button">
+                  <Link href="/work" scroll={false} className="footer-projects-button cursor-target" data-cursor-label="View all projects">
                     View all projects
                   </Link>
                 </div>
@@ -248,9 +249,9 @@ export default function SiteFooter() {
                 <div className="space-y-3 pt-1">
                   <p className="text-xs font-semibold tracking-wide text-gray-700">Follow me on social media</p>
                   <div className="flex items-center justify-center space-x-2.5">
-                    <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="icon-circle" title="LinkedIn" aria-label="LinkedIn">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/images/linkedin.png" alt="" width="28" height="28" /></a>
-                    <a href="https://behance.net" target="_blank" rel="noreferrer" className="icon-circle" title="Behance" aria-label="Behance">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/images/behance.png" alt="" width="30" height="30" className="behance-logo" /></a>
-                    <a href="https://instagram.com" target="_blank" rel="noreferrer" className="icon-circle" title="Instagram" aria-label="Instagram"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/instagram.svg" alt="" width="20" height="20" /></a>
+                    <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="icon-circle cursor-target" title="LinkedIn" aria-label="LinkedIn">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/images/linkedin.png" alt="" width="28" height="28" /></a>
+                    <a href="https://behance.net" target="_blank" rel="noreferrer" className="icon-circle cursor-target" title="Behance" aria-label="Behance">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/images/behance.png" alt="" width="30" height="30" className="behance-logo" /></a>
+                    <a href="https://instagram.com" target="_blank" rel="noreferrer" className="icon-circle cursor-target" title="Instagram" aria-label="Instagram"><img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/instagram.svg" alt="" width="20" height="20" /></a>
                   </div>
                 </div>
               </div>
