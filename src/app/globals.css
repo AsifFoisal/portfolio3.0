@@ -1647,8 +1647,11 @@ p {
 }
 
 .experience-stack .experience-item {
+  /* svh (not dvh): the small viewport height stays constant while mobile
+     browser chrome collapses during scroll, so cards never resize mid-stack —
+     dynamic viewport height was making the whole stack shake. */
   min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
 }

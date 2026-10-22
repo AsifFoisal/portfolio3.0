@@ -230,8 +230,17 @@ const ScrollStack = ({
     getLayoutTop,
   ]);
 
+  // Batch transform updates to one per animation frame. Touch scrolling fires
+  // scroll events far faster than the screen refreshes; running the layout
+  // reads and transform writes on every event thrashes layout on mobile and
+  // makes the stack visibly shake. One update per frame keeps it smooth.
+  const scrollRafRef = useRef<number | null>(null);
   const handleScroll = useCallback(() => {
-    updateCardTransforms();
+    if (scrollRafRef.current !== null) return;
+    scrollRafRef.current = requestAnimationFrame(() => {
+      scrollRafRef.current = null;
+      updateCardTransforms();
+    });
   }, [updateCardTransforms]);
 
   // In container mode the stack owns its own Lenis instance. In window mode we
@@ -303,6 +312,13 @@ const ScrollStack = ({
       updateCardTransforms();
     };
 
+    const cancelScrollRaf = () => {
+      if (scrollRafRef.current !== null) {
+        cancelAnimationFrame(scrollRafRef.current);
+        scrollRafRef.current = null;
+      }
+    };
+
     let cleanupScroll: () => void;
     if (useWindowScroll) {
       window.addEventListener('scroll', handleScroll, { passive: true });
@@ -310,6 +326,7 @@ const ScrollStack = ({
       const resizeObserver = new ResizeObserver(handleResize);
       resizeObserver.observe(scroller);
       cleanupScroll = () => {
+        cancelScrollRaf();
         window.removeEventListener('scroll', handleScroll);
         window.removeEventListener('resize', handleResize);
         resizeObserver.disconnect();
@@ -317,6 +334,7 @@ const ScrollStack = ({
     } else {
       setupLenis();
       cleanupScroll = () => {
+        cancelScrollRaf();
         if (animationFrameRef.current) {
           cancelAnimationFrame(animationFrameRef.current);
           animationFrameRef.current = null;

@@ -261,7 +261,10 @@ export default function TrionnRibbon({ onCarouselItemClick }: { onCarouselItemCl
           const [c, x] = S(1024, 712);
           draw(x);
           const t = new THREE.CanvasTexture(c);
-          t.colorSpace = THREE.SRGBColorSpace;
+          // The custom shader writes sampled values straight to the framebuffer
+          // without an sRGB re-encode, so textures stay in their raw space —
+          // flagging them sRGB would decode to linear and render darker.
+          t.colorSpace = THREE.NoColorSpace;
           t.anisotropy = 8;
           return t;
         }
@@ -510,7 +513,9 @@ export default function TrionnRibbon({ onCarouselItemClick }: { onCarouselItemCl
             url,
             (texture) => {
               if (cancelled) { texture.dispose(); return; }
-              texture.colorSpace = THREE.SRGBColorSpace;
+              // Raw pass-through: the card shader does no sRGB re-encode, so
+              // keep the texture in its original space to show the image as-is.
+              texture.colorSpace = THREE.NoColorSpace;
               texture.anisotropy = 8;
               const mat = cards[k].material as ShaderMaterial;
               mat.uniforms.map.value = texture;

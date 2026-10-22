@@ -27,7 +27,7 @@ import { useSiteContent } from "../data/content-context";
 import { downloadResume } from "../utils/downloadResume";
 import SiteFooter from "./SiteFooter";
 import { HamburgerIcon } from "./Icons";
-import TargetCursor from "./TargetCursor";
+import SiteCursor from "./SiteCursor";
 import type { WorkProject } from "../data/content-types";
 import {
   deliverySrcSet,
@@ -818,7 +818,7 @@ export default function WorkPage() {
 
       </div>
       <SiteFooter />
-      <TargetCursor spinDuration={2} hideDefaultCursor parallaxOn />
+      <SiteCursor />
 
       <style jsx global>{`
         :root {

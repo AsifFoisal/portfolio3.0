@@ -23,7 +23,7 @@ import { downloadResume } from '../utils/downloadResume';
 import { cn } from '../utils/cn';
 import HelixRibbon from './HelixRibbon';
 import PushLoader from './PushLoader';
-import TargetCursor from './TargetCursor';
+import SiteCursor from './SiteCursor';
 
 type Overlay =
   | { kind: 'menu' }
@@ -715,7 +715,7 @@ export default function Portfolio({ content }: { content: SiteContent }) {
 
       <SiteFooter />
       <SiteNav />
-      <TargetCursor spinDuration={2} hideDefaultCursor parallaxOn />
+      <SiteCursor />
 
       {overlay?.kind === 'menu' && <RadialMenu onClose={closeOverlay} onNavigate={navigateTo} />}
       {overlay?.kind === 'contact' && <Dialog label={overlay.intent === 'call' ? 'Book a discovery call' : 'Contact Seam Rahman'} className="contact-dialog" onClose={closeOverlay}><ContactForm intent={overlay.intent} /></Dialog>}
