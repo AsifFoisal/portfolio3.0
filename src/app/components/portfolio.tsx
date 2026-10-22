@@ -78,11 +78,31 @@ function VideoPoster({ rounded = false, expandOnScroll = false }: { rounded?: bo
     if (!video) return;
     if (video.paused) {
       setStarted(true);
-      void video.play().catch(() => setFailed(true));
+      // An explicit click is a user gesture — let this playback carry sound.
+      video.muted = false;
+      void video.play().catch(() => { video.muted = true; void video.play().catch(() => setFailed(true)); });
     } else {
       video.pause();
     }
   }
+
+  // The hero reel starts playing on load. Browsers only allow that muted, so
+  // it autoplays silently until the visitor explicitly plays it (which
+  // unmutes). Users who prefer reduced motion get the paused first frame.
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = true;
+    void video.play().catch(() => {});
+  }, [reel.videoUrl]);
+
+  const posterUrl = (reel.poster ?? '').trim();
+  // The admin may supply only the video. A video URL in the poster field can't
+  // go through next/image (it would render a blank box), so in that case the
+  // video mounts immediately and its first frame acts as the poster.
+  const posterIsImage = !!posterUrl && !/\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(posterUrl);
+  const showVideo = !!reel.videoUrl;
 
   return (
     <motion.div
@@ -99,15 +119,16 @@ function VideoPoster({ rounded = false, expandOnScroll = false }: { rounded?: bo
       onMouseLeave={() => setHovering(false)}
     >
       <motion.div className="video-media" style={expandOnScroll ? { scale: mediaScale } : undefined}>
-        <Image src={reel.poster} alt={reel.posterAlt} fill sizes="100vw" priority={rounded} />
-        {started && (
+        {posterIsImage && <Image src={posterUrl} alt={reel.posterAlt} fill sizes="100vw" priority={rounded} />}
+        {showVideo && (
           <video
             ref={videoRef}
             className="video-inline"
             src={reel.videoUrl}
-            poster={reel.poster}
+            poster={posterIsImage ? posterUrl : undefined}
+            muted
             playsInline
-            preload="metadata"
+            preload="auto"
             onError={() => setFailed(true)}
             onPlay={() => setPlaying(true)}
             onPause={() => setPlaying(false)}
