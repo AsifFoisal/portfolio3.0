@@ -24,6 +24,13 @@ type ScrollStackProps = {
   blurAmount?: number;
   /** Scale the covered card shrinks to while the next card slides over it. 1 disables. */
   zoomOutScale?: number;
+  /**
+   * Pin the cards with `position: sticky` instead of a JS translate. Sticky is
+   * compositor-driven, so the pinned card stays glued to the viewport while the
+   * next card scrolls natively over it — no main-thread lag, no shaking on
+   * mobile. Only suitable when stackPosition is 0% and itemStackDistance is 0.
+   */
+  stickyPinning?: boolean;
   useWindowScroll?: boolean;
   onStackComplete?: () => void;
 };
@@ -45,6 +52,7 @@ const ScrollStack = ({
   rotationAmount = 0,
   blurAmount = 0,
   zoomOutScale = 1,
+  stickyPinning = false,
   useWindowScroll = false,
   onStackComplete,
 }: ScrollStackProps) => {
@@ -168,12 +176,17 @@ const ScrollStack = ({
       }
 
       let translateY = 0;
-      const isPinned = scrollTop >= pinStart && scrollTop <= pinEnd;
+      // In sticky mode the browser pins the cards itself; JS must not also
+      // translate them (a main-thread transform would lag the compositor
+      // scroll by a frame and visibly shake the stack).
+      if (!stickyPinning) {
+        const isPinned = scrollTop >= pinStart && scrollTop <= pinEnd;
 
-      if (isPinned) {
-        translateY = scrollTop - cardTop + stackPositionPx + itemStackDistance * i;
-      } else if (scrollTop > pinEnd) {
-        translateY = pinEnd - cardTop + stackPositionPx + itemStackDistance * i;
+        if (isPinned) {
+          translateY = scrollTop - cardTop + stackPositionPx + itemStackDistance * i;
+        } else if (scrollTop > pinEnd) {
+          translateY = pinEnd - cardTop + stackPositionPx + itemStackDistance * i;
+        }
       }
 
       const newTransform: CardTransform = {
@@ -222,6 +235,7 @@ const ScrollStack = ({
     rotationAmount,
     blurAmount,
     zoomOutScale,
+    stickyPinning,
     useWindowScroll,
     onStackComplete,
     calculateProgress,
@@ -299,6 +313,13 @@ const ScrollStack = ({
       if (i < cards.length - 1) {
         card.style.marginBottom = `${itemDistance}px`;
       }
+      if (stickyPinning) {
+        // Native, compositor-synced pinning: each card sticks to the top and
+        // the next one scrolls over it natively. Later cards paint above.
+        card.style.position = 'sticky';
+        card.style.top = '0';
+        card.style.zIndex = String(i + 1);
+      }
       card.style.willChange = 'transform, filter';
       card.style.transformOrigin = 'top center';
       card.style.backfaceVisibility = 'hidden';
@@ -365,6 +386,7 @@ const ScrollStack = ({
     scaleDuration,
     rotationAmount,
     blurAmount,
+    stickyPinning,
     useWindowScroll,
     onStackComplete,
     setupLenis,

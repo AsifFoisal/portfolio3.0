@@ -697,7 +697,7 @@ export default function Portfolio({ content }: { content: SiteContent }) {
         </div>
 
         <section className="experience-list" aria-labelledby="experience">
-          <ScrollStack className="experience-stack" useWindowScroll itemDistance={24} baseScale={1} itemScale={0} stackPosition="0%" itemStackDistance={0} zoomOutScale={0.88}>
+          <ScrollStack className="experience-stack" useWindowScroll stickyPinning itemDistance={24} baseScale={1} itemScale={0} stackPosition="0%" itemStackDistance={0} zoomOutScale={0.88}>
             {content.experience.items.map((job) => (
               <ScrollStackItem key={job.company}>
                 <article className={`experience-item ${job.className}`}>
