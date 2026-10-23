@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode, type RefObject } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -539,6 +539,26 @@ export default function Portfolio({ content }: { content: SiteContent }) {
   const [openService, setOpenService] = useState<number | null>(0);
   const [loading, setLoading] = useState(true);
   const lenisRef = useRef<Lenis | null>(null);
+  // Arriving from an in-site navigation (e.g. the Work page home chip) skips
+  // the intro loader; the flag is one-shot so direct loads still play it.
+  const skipIntro = useCallback(() => {
+    try {
+      if (sessionStorage.getItem('skip-home-intro')) {
+        sessionStorage.removeItem('skip-home-intro');
+        setLoading(false);
+        // Arriving with #section: scroll to it once the page has laid out.
+        const hash = window.location.hash;
+        if (hash) {
+          window.setTimeout(() => {
+            if (!document.querySelector(hash)) return;
+            if (lenisRef.current) lenisRef.current.scrollTo(hash, { offset: -32, duration: 1.1 });
+            else document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth' });
+          }, 250);
+        }
+      }
+    } catch { /* storage unavailable */ }
+  }, []);
+  (typeof window === 'undefined' ? useEffect : useLayoutEffect)(skipIntro, [skipIntro]);
   const aboutRef = useRef<HTMLElement>(null);
   const closeOverlay = useCallback(() => setOverlay(null), []);
 

@@ -23,7 +23,7 @@ import {
 import { useSiteContent } from "../data/content-context";
 import { downloadResume } from "../utils/downloadResume";
 import SiteFooter from "./SiteFooter";
-import { HamburgerIcon } from "./Icons";
+import { ArrowIcon, HamburgerIcon } from "./Icons";
 import SiteCursor from "./SiteCursor";
 import RadialMenu from "./RadialMenu";
 import type { WorkProject } from "../data/content-types";
@@ -343,7 +343,7 @@ function ProjectGo({ label, href }: { label: string; href: string }) {
       rel={href ? "noreferrer" : undefined}
       aria-disabled={href ? undefined : true}
     >
-      <span className="go__label">{label}</span> <i>→</i>
+      <span className="go__label">{label}</span> <ArrowIcon />
     </a>
   );
 }
@@ -711,7 +711,15 @@ export default function WorkPage() {
       <canvas id="gl" ref={glRef} />
 
       <header>
-        <Link href="/" className="wk-home cursor-target" data-cursor-label="Home" aria-label="Seam Rahman — back to home">
+        <Link
+          href="/"
+          className="wk-home cursor-target"
+          data-cursor-label="Home"
+          aria-label="Seam Rahman — back to home"
+          onClick={() => {
+            try { sessionStorage.setItem("skip-home-intro", "1"); } catch { /* storage unavailable */ }
+          }}
+        >
           <Image
             src="/images/designer-portrait.jpg"
             alt="Seam Rahman"
@@ -751,6 +759,9 @@ export default function WorkPage() {
           onClose={() => setMenuOpen(false)}
           onNavigate={(href) => {
             setMenuOpen(false);
+            if (href.startsWith("#") || href === "/") {
+              try { sessionStorage.setItem("skip-home-intro", "1"); } catch { /* storage unavailable */ }
+            }
             router.push(href.startsWith("#") ? `/${href}` : href);
           }}
         />
@@ -1077,85 +1088,70 @@ export default function WorkPage() {
         .meta h3 {
           font-family: "Bai Jamjuree", Helvetica, Arial, sans-serif;
           font-weight: 600;
-          font-size: 36px;
-          letter-spacing: -0.04em;
-          color: #ececec;
-          line-height: 1.1;
+          font-size: 32px;
+          letter-spacing: -0.02em;
+          color: #ffffff;
+          line-height: 1.25;
         }
         .meta p {
-          margin-top: 9px;
-          font-size: 17px;
-          font-weight: 500;
+          margin-top: 6px;
+          font-size: 14px;
+          font-weight: 400;
           line-height: 1.3;
-          color: var(--mut);
-          max-width: 290px;
+          color: #ffffff;
           letter-spacing: -0.01em;
         }
-        /* Live / Figma links: bright red label with its own underline; the
-           arrow stays clean (no underline under it). */
+        /* Links mirror the homepage project caption: red label, diagonal
+           arrow, hover to white, behind a dotted separator. */
         .go {
-          margin-top: 6px;
-          display: inline-flex;
+          display: flex;
           align-items: center;
-          gap: 10px;
-          font: 500 17px "Bai Jamjuree", sans-serif;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-          color: #ff4c4e;
-          text-decoration: none;
-          border: 0;
+          gap: 7px;
           padding: 0;
           background: transparent;
-          transition: color 200ms ease;
-        }
-        .go__label {
-          text-decoration: underline;
-          text-decoration-color: #ff4c4e;
-          text-decoration-thickness: 1.5px;
-          text-underline-offset: 5px;
-          transition: text-decoration-color 200ms ease, text-underline-offset 200ms ease;
+          border: 0;
+          color: #ff4c4e;
+          font-size: 16px;
+          font-weight: 500;
+          text-decoration: none;
+          transition: color 200ms;
         }
         .go:hover,
         .go:focus-visible {
-          color: #ff5f61;
+          color: #ffffff;
         }
-        .go:hover .go__label,
-        .go:focus-visible .go__label {
-          text-decoration-color: #ff5f61;
-          text-underline-offset: 8px;
+        .go svg {
+          width: 15px;
+          height: 15px;
+          transition: transform 200ms;
         }
-        .go i {
-          font-style: normal;
-          transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        .go:hover svg {
+          transform: translate(1px, -1px);
         }
-        .go:hover i {
-          transform: translateX(5px);
+        /* The meta is a flex row, so its text block would shrink-wrap to the
+           widest line; stretch it so the separator spans the full card. */
+        .meta > div {
+          width: 100%;
         }
         .meta-links {
           display: flex;
           flex-wrap: wrap;
           align-items: center;
-          gap: 26px;
-          margin-top: 18px;
+          gap: 20px;
+          margin-top: 20px;
+          padding-top: 20px;
+          border-top: 1px dotted #5a5a5a;
         }
         .meta-links .go {
           margin-top: 0;
         }
         .go.is-disabled {
-          color: rgba(255, 76, 78, 0.7);
+          color: #6b6b6b;
           cursor: not-allowed;
         }
-        .go.is-disabled .go__label {
-          text-decoration-color: rgba(255, 76, 78, 0.5);
-        }
-        .go.is-disabled:hover {
-          color: rgba(255, 76, 78, 0.7);
-        }
-        .go.is-disabled:hover .go__label {
-          text-decoration-color: rgba(255, 76, 78, 0.5);
-          text-underline-offset: 5px;
-        }
-        .go.is-disabled:hover i {
+        .go.is-disabled:hover,
+        .go.is-disabled:hover svg {
+          color: #6b6b6b;
           transform: none;
         }
 

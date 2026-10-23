@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useAnimationFrame, useMotionValue, useSpring } from 'motion/react';
@@ -127,6 +128,10 @@ function FooterMarquee({ whatsappUrl, marqueeText, marqueeSymbol, cursorLabel }:
 export default function SiteFooter() {
   const content = useSiteContent();
   const footer = content.footer;
+  const pathname = usePathname();
+  // "#services" only exists on the homepage; from other pages the footer links
+  // must route there first (and skip the homepage intro loader).
+  const servicesHref = pathname === '/' ? '#services' : '/#services';
   const [toast, setToast] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -223,7 +228,17 @@ export default function SiteFooter() {
                 <h3 className="footer-services-heading mb-4 text-xl font-bold text-center text-gray-900">{footer.servicesHeading}</h3>
                 <div className="footer-services-list flex flex-col w-full">
                   {content.services.items.map((service) => (
-                    <a key={service.title} href="#services" className="footer-service-link cursor-target rounded-lg px-4 py-2.5 text-left text-[16px] font-medium text-gray-900" data-cursor-label={service.title}>
+                    <a
+                      key={service.title}
+                      href={servicesHref}
+                      className="footer-service-link cursor-target rounded-lg px-4 py-2.5 text-left text-[16px] font-medium text-gray-900"
+                      data-cursor-label={service.title}
+                      onClick={() => {
+                        if (servicesHref !== '#services') {
+                          try { sessionStorage.setItem('skip-home-intro', '1'); } catch { /* storage unavailable */ }
+                        }
+                      }}
+                    >
                       {service.title}
                     </a>
                   ))}
