@@ -18,6 +18,25 @@
   opacity: 1;
 }
 
+/* Phones: the 750px ring fan is far too large for the screen. Shrink the whole
+   menu about its hub — (520,160) inside the 680px canvas — so it stays anchored
+   to the header button while the fan becomes small. Ring labels are enlarged
+   to compensate for the scale so they remain readable. */
+@media (max-width: 640px) {
+  .menu-container {
+    transform-origin: 76.47% 23.53%;
+  }
+
+  .menu-container.active {
+    transform: scale(0.5) rotate(0deg);
+  }
+
+  .menu-container .ring-text {
+    font-size: 20px;
+    letter-spacing: 0.16em;
+  }
+}
+
 /* Staggered ring entrance animations */
 .ring-group {
   transform-origin: 520px 160px;
