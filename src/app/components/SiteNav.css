@@ -189,20 +189,30 @@
   .nav-system-wrapper {
     width: 620px;
     transform-origin: bottom center;
-    transform: translate(-50%, calc(100% + 40px)) scale(0.56);
+    transform: translate(-50%, calc(100% + 40px)) scale(0.62);
   }
 
   .nav-system-wrapper.visible {
-    transform: translate(-50%, 0) scale(0.56);
+    transform: translate(-50%, 0) scale(0.62);
+  }
+}
+
+@media (max-width: 400px) {
+  .nav-system-wrapper {
+    transform: translate(-50%, calc(100% + 40px)) scale(0.58);
+  }
+
+  .nav-system-wrapper.visible {
+    transform: translate(-50%, 0) scale(0.58);
   }
 }
 
 @media (max-width: 360px) {
   .nav-system-wrapper {
-    transform: translate(-50%, calc(100% + 40px)) scale(0.47);
+    transform: translate(-50%, calc(100% + 40px)) scale(0.5);
   }
 
   .nav-system-wrapper.visible {
-    transform: translate(-50%, 0) scale(0.47);
+    transform: translate(-50%, 0) scale(0.5);
   }
 }
