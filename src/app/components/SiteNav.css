@@ -29,8 +29,8 @@
 /* SVG Notch Shape */
 .site-nav {
   --nav-w: 56.5625rem;
-  --nav-h: 5.5rem;
-  --pill-h: 4.05rem;
+  --nav-h: 6.1rem;
+  --pill-h: 4.5rem;
   --btn: 54px;
 
   position: relative;
@@ -43,8 +43,8 @@
 /* Responsive scaling */
 @media (max-width: 860px) {
   .site-nav {
-    --nav-h: 6.7rem;
-    --pill-h: 4.85rem;
+    --nav-h: 7.3rem;
+    --pill-h: 5.35rem;
     --btn: 3.55rem;
   }
 }
@@ -173,72 +173,36 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* Phone layout — declared last so it wins over the base rules above. */
 /* ------------------------------------------------------------------ */
-@media (max-width: 560px) {
+/* Phone layout — the exact desktop navbar, uniformly scaled down.     */
+/* The navbar keeps its fixed desktop width so the notch SVG keeps its */
+/* true aspect ratio (no stretching, no oval), and every part — shape, */
+/* spacing, type, to-top button — scales together as one.              */
+/* ------------------------------------------------------------------ */
+@media (max-width: 640px) {
   .site-nav {
-    --nav-h: 4.4rem;
-    --pill-h: 4.4rem;
-    --btn: 2.6rem;
+    --nav-h: 6.1rem;
+    --pill-h: 4.5rem;
+    --btn: 54px;
   }
 
-  /* The desktop notch shape is a stretched SVG (elliptical corners distort on
-     narrow widths, reading as an oval). Phones get a true CSS pill instead:
-     circular ends, to-top button centered inside. */
-  .site-nav__shape {
-    display: none;
+  .nav-system-wrapper {
+    width: 620px;
+    transform-origin: bottom center;
+    transform: translate(-50%, calc(100% + 40px)) scale(0.56);
   }
 
-  .site-nav::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--color-nav);
-    border-radius: 9999px;
-    z-index: 1;
+  .nav-system-wrapper.visible {
+    transform: translate(-50%, 0) scale(0.56);
+  }
+}
+
+@media (max-width: 360px) {
+  .nav-system-wrapper {
+    transform: translate(-50%, calc(100% + 40px)) scale(0.47);
   }
 
-  .site-nav__to-top {
-    top: 50%;
-    transform: translateY(-50%);
-  }
-
-  .site-nav__to-top:hover {
-    transform: translateY(-50%) scale(1.03);
-  }
-
-  /* Compact row: avatar on the left, hamburger on the right — the name,
-     scroll percentage, divider and MENU label are dropped. */
-  .site-nav__name,
-  .site-nav__menu-label,
-  #scrollPercentage,
-  .site-nav__row .w-\[1px\] {
-    display: none;
-  }
-
-  .site-nav__row {
-    padding: 0 0.95rem;
-  }
-
-  .site-nav__row .gap-3,
-  .site-nav__row .gap-2 {
-    gap: 7px;
-  }
-
-  .site-nav__row img {
-    width: 36px !important;
-    height: 36px !important;
-  }
-
-  .site-nav__row button svg {
-    width: 24px !important;
-    height: 24px !important;
-  }
-
-  /* Nudge the avatar right: cancel the desktop optical left-offset
-     (Tailwind v4 sets the standalone `translate` property, not transform),
-     so it sits in from the pill edge with proper breathing room. */
-  .site-nav__row > a {
-    translate: 0 0;
+  .nav-system-wrapper.visible {
+    transform: translate(-50%, 0) scale(0.47);
   }
 }
