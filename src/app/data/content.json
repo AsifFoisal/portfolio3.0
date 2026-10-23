@@ -542,7 +542,9 @@
         "align": "l",
         "width": 40.6,
         "art": "work",
-        "url": ""
+        "url": "",
+        "liveUrl": "",
+        "figmaUrl": ""
       },
       {
         "title": "Pulse Studio",
@@ -551,7 +553,9 @@
         "align": "r",
         "width": 35.4,
         "art": "pulse",
-        "url": ""
+        "url": "",
+        "liveUrl": "",
+        "figmaUrl": ""
       },
       {
         "title": "Loftloom",
@@ -560,7 +564,9 @@
         "align": "l",
         "width": 40.6,
         "art": "loft",
-        "url": ""
+        "url": "",
+        "liveUrl": "",
+        "figmaUrl": ""
       },
       {
         "title": "DFZ Watch",
@@ -569,7 +575,9 @@
         "align": "c",
         "width": 45.6,
         "art": "dfz",
-        "url": ""
+        "url": "",
+        "liveUrl": "",
+        "figmaUrl": ""
       },
       {
         "title": "Domus Immobilien Kultur",
@@ -578,7 +586,9 @@
         "align": "r",
         "width": 40.7,
         "art": "domus",
-        "url": ""
+        "url": "",
+        "liveUrl": "",
+        "figmaUrl": ""
       },
       {
         "title": "Revnet",
@@ -587,7 +597,9 @@
         "align": "l",
         "width": 35.7,
         "art": "rev",
-        "url": ""
+        "url": "",
+        "liveUrl": "",
+        "figmaUrl": ""
       },
       {
         "title": "Fintech Dashboard",
@@ -596,7 +608,9 @@
         "align": "c",
         "width": 45.7,
         "art": "fin",
-        "url": ""
+        "url": "",
+        "liveUrl": "",
+        "figmaUrl": ""
       }
     ]
   },

@@ -127,6 +127,7 @@ function VideoPoster({ rounded = false, expandOnScroll = false }: { rounded?: bo
             src={reel.videoUrl}
             poster={posterIsImage ? posterUrl : undefined}
             muted
+            loop
             playsInline
             preload="auto"
             onError={() => setFailed(true)}

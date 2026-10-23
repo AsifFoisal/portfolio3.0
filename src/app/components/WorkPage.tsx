@@ -9,25 +9,23 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import * as THREE from "three";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import {
-  BehanceIcon,
-  CloseIcon,
   GrokIcon,
-  InstagramIcon,
-  LinkedInIcon,
   OpenAIIcon,
   PerplexityIcon,
-  WhatsApp3DIcon,
 } from "./Icons";
 import { useSiteContent } from "../data/content-context";
 import { downloadResume } from "../utils/downloadResume";
 import SiteFooter from "./SiteFooter";
 import { HamburgerIcon } from "./Icons";
 import SiteCursor from "./SiteCursor";
+import RadialMenu from "./RadialMenu";
 import type { WorkProject } from "../data/content-types";
 import {
   deliverySrcSet,
@@ -57,6 +55,8 @@ interface Project {
   art: ArtKey;
   image: string;
   url: string;
+  liveUrl: string;
+  figmaUrl: string;
   align: Align;
   width: number;
 }
@@ -82,6 +82,8 @@ const normalize = (p: WorkProject, i: number): Project => ({
   art: isArtKey(p.art) ? p.art : FB[i % FB.length],
   image: p.image || "",
   url: toHref(p.url || p.liveUrl || p.figmaUrl),
+  liveUrl: toHref(p.liveUrl || p.url),
+  figmaUrl: toHref(p.figmaUrl),
   align: isAlign(p.align) ? p.align : LAY[i % LAY.length][0],
   width: Number(p.width) > 0 ? Number(p.width) : LAY[i % LAY.length][1],
 });
@@ -341,7 +343,7 @@ function ProjectGo({ label, href }: { label: string; href: string }) {
       rel={href ? "noreferrer" : undefined}
       aria-disabled={href ? undefined : true}
     >
-      {label} <i>→</i>
+      <span className="go__label">{label}</span> <i>→</i>
     </a>
   );
 }
@@ -356,10 +358,8 @@ const ORDER = [0, 7, 3, 10, 1, 12, 5, 8, 2, 9, 4, 13, 6, 11];
 export default function WorkPage() {
   // Admin-managed content (Supabase-backed, provided by app/work/page.tsx).
   const content = useSiteContent();
+  const router = useRouter();
   const work = content.work;
-  const footer = content.footer;
-  const services = content.services;
-  const navigation = content.navigation;
 
   const [projects] = useState<Project[]>(() => (work?.projects ?? []).map(normalize));
   const [menuOpen, setMenuOpen] = useState(false);
@@ -711,6 +711,16 @@ export default function WorkPage() {
       <canvas id="gl" ref={glRef} />
 
       <header>
+        <Link href="/" className="wk-home cursor-target" data-cursor-label="Home" aria-label="Seam Rahman — back to home">
+          <Image
+            src="/images/designer-portrait.jpg"
+            alt="Seam Rahman"
+            width={88}
+            height={88}
+            className="wk-home__avatar"
+          />
+          <span className="wk-home__name">Seam Rahman</span>
+        </Link>
         <div className="nav">
           {/* Main-page header buttons (CV + hamburger Menu) */}
           <button
@@ -735,45 +745,16 @@ export default function WorkPage() {
         </div>
       </header>
 
-      {/* MENU SIDEBAR */}
-      <div
-        className={`wk-overlay${menuOpen ? " open" : ""}`}
-        onClick={() => setMenuOpen(false)}
-        aria-hidden="true"
-      />
-      <aside className={`wk-menu${menuOpen ? " open" : ""}`} aria-hidden={!menuOpen}>
-        <div className="wk-menu__head">
-          <span className="wk-menu__label">Menu</span>
-          <button className="wk-menu__close" type="button" aria-label="Close menu" onClick={() => setMenuOpen(false)}>
-            <CloseIcon />
-          </button>
-        </div>
-
-        <nav className="wk-menu__nav">
-          {navigation.map((link) => (
-            <Link
-              key={`${link.label}-${link.href}`}
-              href={link.href.startsWith("#") ? `/${link.href}` : link.href}
-              onClick={() => setMenuOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="wk-menu__foot">
-          <a className="wk-hello wk-hello--sm" href={footer.whatsappUrl} target="_blank" rel="noreferrer">
-            <span className="wk-hello__text">Contact With Me</span>
-            <span className="wk-hello__badge"><WhatsApp3DIcon /></span>
-          </a>
-          <a className="wk-menu__mail" href={`mailto:${footer.email}`}>{footer.email}</a>
-          <div className="wk-menu__socials">
-            <a href="https://linkedin.com" target="_blank" rel="noreferrer" aria-label="LinkedIn"><LinkedInIcon /></a>
-            <a href="https://behance.net" target="_blank" rel="noreferrer" aria-label="Behance"><BehanceIcon /></a>
-            <a href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><InstagramIcon /></a>
-          </div>
-        </div>
-      </aside>
+      {/* RADIAL MENU — same one as the main page */}
+      {menuOpen && (
+        <RadialMenu
+          onClose={() => setMenuOpen(false)}
+          onNavigate={(href) => {
+            setMenuOpen(false);
+            router.push(href.startsWith("#") ? `/${href}` : href);
+          }}
+        />
+      )}
 
       <section className="work-hero">
         <div className="stick">
@@ -806,9 +787,10 @@ export default function WorkPage() {
                 <div>
                   <h3>{p.title}</h3>
                   <p>{p.desc}</p>
-                </div>
-                <div className="meta-links">
-                  <ProjectGo label="Explore Project" href={p.url} />
+                  <div className="meta-links">
+                    <ProjectGo label="Live Link" href={p.liveUrl} />
+                    <ProjectGo label="Figma Link" href={p.figmaUrl} />
+                  </div>
                 </div>
               </div>
             </article>
@@ -841,6 +823,36 @@ export default function WorkPage() {
         .wk-page .nav {
           gap: 24px;
           margin-left: auto;
+        }
+        /* Top-left home navigation: portrait chip + name, like the site nav. */
+        .wk-home {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: #f2f2f2;
+          text-decoration: none;
+        }
+        .wk-home__avatar {
+          width: 44px;
+          height: 44px;
+          border-radius: 9999px;
+          object-fit: cover;
+          background: #fff;
+        }
+        .wk-home__name {
+          font: 600 15px/1 "Bai Jamjuree", Helvetica, Arial, sans-serif;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          white-space: nowrap;
+        }
+        @media (max-width: 560px) {
+          .wk-home__avatar {
+            width: 38px;
+            height: 38px;
+          }
+          .wk-home__name {
+            display: none;
+          }
         }
         .wk-page .cv-button {
           padding: 0 18px;
@@ -1065,34 +1077,52 @@ export default function WorkPage() {
         .meta h3 {
           font-family: "Bai Jamjuree", Helvetica, Arial, sans-serif;
           font-weight: 600;
-          font-size: 34px;
+          font-size: 36px;
           letter-spacing: -0.04em;
           color: #ececec;
           line-height: 1.1;
         }
         .meta p {
           margin-top: 9px;
-          font-size: 16px;
+          font-size: 17px;
           font-weight: 500;
           line-height: 1.3;
           color: var(--mut);
           max-width: 290px;
           letter-spacing: -0.01em;
         }
+        /* Live / Figma links: bright red label with its own underline; the
+           arrow stays clean (no underline under it). */
         .go {
           margin-top: 6px;
-          width: 185px;
-          display: flex;
-          justify-content: space-between;
-          font: 500 16px "Bai Jamjuree", sans-serif;
-          letter-spacing: 0.02em;
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          font: 500 17px "Bai Jamjuree", sans-serif;
+          letter-spacing: 0.04em;
           text-transform: uppercase;
-          color: #fff;
+          color: #ff4c4e;
           text-decoration: none;
-          border-bottom: 1px solid #fff;
-          padding-bottom: 4px;
-          position: relative;
-          overflow: hidden;
+          border: 0;
+          padding: 0;
+          background: transparent;
+          transition: color 200ms ease;
+        }
+        .go__label {
+          text-decoration: underline;
+          text-decoration-color: #ff4c4e;
+          text-decoration-thickness: 1.5px;
+          text-underline-offset: 5px;
+          transition: text-decoration-color 200ms ease, text-underline-offset 200ms ease;
+        }
+        .go:hover,
+        .go:focus-visible {
+          color: #ff5f61;
+        }
+        .go:hover .go__label,
+        .go:focus-visible .go__label {
+          text-decoration-color: #ff5f61;
+          text-underline-offset: 8px;
         }
         .go i {
           font-style: normal;
@@ -1103,18 +1133,27 @@ export default function WorkPage() {
         }
         .meta-links {
           display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          align-self: flex-end;
-          gap: 12px;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 26px;
+          margin-top: 18px;
         }
         .meta-links .go {
           margin-top: 0;
         }
         .go.is-disabled {
-          color: #fff;
-          border-bottom-color: rgba(255, 255, 255, 0.18);
+          color: rgba(255, 76, 78, 0.7);
           cursor: not-allowed;
+        }
+        .go.is-disabled .go__label {
+          text-decoration-color: rgba(255, 76, 78, 0.5);
+        }
+        .go.is-disabled:hover {
+          color: rgba(255, 76, 78, 0.7);
+        }
+        .go.is-disabled:hover .go__label {
+          text-decoration-color: rgba(255, 76, 78, 0.5);
+          text-underline-offset: 5px;
         }
         .go.is-disabled:hover i {
           transform: none;

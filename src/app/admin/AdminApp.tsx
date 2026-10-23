@@ -29,7 +29,7 @@ const FIELD_ORDER: Record<string, string[]> = {
   stories: ['captionTitle', 'captionText', 'captionEyebrow', 'videoUrl', 'poster', 'mobileTitleTop', 'mobileTitleBottom'],
   latest: ['heading', 'items'],
   helix: ['items', 'image'],
-  work: ['brandName', 'heroTitle', 'projects', 'heroLogoDim', 'heroLogoFill', 'heroLogoAlt', 'title', 'description', 'image', 'url', 'align', 'width', 'art'],
+  work: ['brandName', 'heroTitle', 'projects', 'heroLogoDim', 'heroLogoFill', 'heroLogoAlt', 'title', 'description', 'image', 'url', 'liveUrl', 'figmaUrl', 'align', 'width', 'art'],
   approach: ['heading', 'steps'],
   experience: ['heading', 'items'],
   testimonials: ['heading', 'eyebrow', 'items'],

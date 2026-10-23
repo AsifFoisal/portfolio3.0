@@ -51,7 +51,19 @@ export default function RadialMenu({ onClose, onNavigate }: RadialMenuProps) {
   }, [content.navigation]);
 
   const [open, setOpen] = useState(false);
+  const [compact, setCompact] = useState(false);
   const closingRef = useRef(false);
+
+  // Phones render the menu at half scale with enlarged ring labels, so those
+  // labels need a later anchor point to avoid clipping at the path start.
+  // Desktop keeps its original centered placement.
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 640px)');
+    const update = () => setCompact(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
 
   const requestClose = useCallback(
     (after?: () => void) => {
@@ -118,7 +130,7 @@ export default function RadialMenu({ onClose, onNavigate }: RadialMenuProps) {
           >
             <circle cx={HUB_X} cy={HUB_Y} r={ring.radius} fill={ring.fill} filter="url(#ring-shadow)" className="ring-path" />
             <text className="ring-text" fontSize={ring.fontSize}>
-              <textPath href={`#radial-path-${rings.length - 1 - reverseIndex}`} startOffset="12.5%" textAnchor="middle">
+              <textPath href={`#radial-path-${rings.length - 1 - reverseIndex}`} startOffset={compact && ring.radius < 160 ? '18%' : '12.5%'} textAnchor="middle">
                 {ring.label.toUpperCase()}
               </textPath>
             </text>

@@ -220,7 +220,7 @@ export default function SiteNav() {
                 onClick={() => setMenuOpen(true)}
               >
                 <span className="site-nav__menu-label">MENU</span>
-                <svg className="w-[33px] h-[33px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <svg className="w-[31px] h-[31px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <line x1="4" y1="7" x2="20" y2="7"></line>
                   <line x1="4" y1="12" x2="20" y2="12"></line>
                   <line x1="4" y1="17" x2="20" y2="17"></line>
